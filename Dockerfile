@@ -2,7 +2,7 @@ FROM gradle:6.6-jdk11 AS build
 ARG release_version
 
 COPY ./ .
-RUN gradle --no-daemon clean build dockerPrepare
+RUN ./gradlew clean build dockerPrepare
 
 FROM openjdk:12-alpine
 ENV RABBITMQ_HOST=rabbitmq \
