@@ -20,6 +20,7 @@ import com.exactpro.th2.common.grpc.Value
 import com.exactpro.th2.common.message.addFields
 import com.exactpro.th2.common.message.copyFields
 import com.exactpro.th2.common.message.message
+import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
@@ -33,8 +34,8 @@ class TemplateFixRule(field: Map<String, Value>) : MessageCompareRule() {
         init("NewOrderSingle", field)
     }
 
-    override fun handleTriggered(incomeMessage: Message): MutableList<Message> =
-        arrayListOf(
+    override fun handle(context: IRuleContext, incomeMessage: Message) {
+        context.send(
             message("ExecutionReport").addFields(
                 "OrderID", orderId.incrementAndGet(),
                 "ExecID", execId.incrementAndGet(),
@@ -42,8 +43,20 @@ class TemplateFixRule(field: Map<String, Value>) : MessageCompareRule() {
                 "OrdStatus", "0",
                 "CumQty", "0",
                 "TradingParty", null,
-                "TransactTime", LocalDateTime.now().toString())
-                .copyFields(incomeMessage, "Side", "LeavesQty", "ClOrdID", "SecurityID", "SecurityIDSource", "OrdType", "OrderQty")
+                "TransactTime", LocalDateTime.now().toString()
+            )
+                .copyFields(
+                    incomeMessage,
+                    "Side",
+                    "LeavesQty",
+                    "ClOrdID",
+                    "SecurityID",
+                    "SecurityIDSource",
+                    "OrdType",
+                    "OrderQty"
+                )
                 .build()
         )
+    }
+
 }

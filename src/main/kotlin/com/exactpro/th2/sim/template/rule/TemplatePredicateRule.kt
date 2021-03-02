@@ -21,6 +21,7 @@ import com.exactpro.th2.common.message.message
 import com.exactpro.th2.common.value.getBigDecimal
 import com.exactpro.th2.common.value.getInt
 import com.exactpro.th2.common.value.getString
+import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessagePredicateRule
 import java.math.BigDecimal
 import java.util.function.Predicate
@@ -35,7 +36,7 @@ class TemplatePredicateRule : MessagePredicateRule() {
             ))
     }
 
-    override fun handleTriggered(p0: Message): MutableList<Message> = arrayListOf(
-        message("ExecutionReport").addField("ClOrdID", "orderId").build()
-    )
+    override fun handle(context: IRuleContext, incomingMessage: Message) {
+        context.send(message("ExecutionReport").addField("ClOrdID", "orderId").build())
+    }
 }

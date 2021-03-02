@@ -21,6 +21,7 @@ import com.exactpro.th2.common.message.copyFields
 import com.exactpro.th2.common.message.getField
 import com.exactpro.th2.common.message.message
 import com.exactpro.th2.common.value.getInt
+import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.AbstractRule
 
 class TemplateAbstractRule : AbstractRule() {
@@ -35,10 +36,8 @@ class TemplateAbstractRule : AbstractRule() {
         return false
     }
 
-    override fun handleTriggered(p0: Message): MutableList<Message> {
-        return arrayListOf(message("ExecutionReport").copyFields(p0, "field1", "field3").addField("field4", "value").build())
+    override fun handle(context: IRuleContext, incomingMessage: Message) {
+        return context.send(message("ExecutionReport").copyFields(incomingMessage, "field1", "field3").addField("field4", "value").build())
     }
-
-
 
 }

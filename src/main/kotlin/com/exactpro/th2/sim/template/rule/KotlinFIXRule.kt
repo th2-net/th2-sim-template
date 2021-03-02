@@ -23,6 +23,7 @@ import com.exactpro.th2.common.message.*
 import com.exactpro.th2.common.value.getInt
 import com.exactpro.th2.common.value.getMessage
 import com.exactpro.th2.common.value.getString
+import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.time.LocalDateTime
 
@@ -42,7 +43,8 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
     init {
         init("NewOrderSingle", field)
     }
-    override fun handleTriggered(incomeMessage: Message): MutableList<Message> {
+
+    override fun handle(context: IRuleContext, incomeMessage: Message) {
         incomeMsgList.add(incomeMessage)
         while (incomeMsgList.size > 3) {
             incomeMsgList.removeAt(0)
@@ -53,7 +55,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
         while (ordIdList.size > 3) {
             ordIdList.removeAt(0)
         }
-        val result = ArrayList<Message>()
+
         if (!incomeMessage.containsFields("Side")) {  // Empty Side tag should be rejected.
                             val rej = message("Reject").addFields(
                                     "RefTagID", "453",
@@ -62,7 +64,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Text", "Simulating reject message",
                                     "SessionRejectReason", "1"
                             )
-                            result.add(rej.build())
+                            context.send(rej.build())
                         }
         else {
             when (incomeMessage.getString("SecurityID")) {
@@ -96,7 +98,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "OrdStatus", "0",
                                             "CumQty", "0"
                                     )
-                            result.add(fixNew.build())
+                            context.send(fixNew.build())
                             // DropCopy
                             val dcNew = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                     .copyFields(incomeMessage,  // fields from NewOrder
@@ -123,7 +125,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "OrdStatus", "0",
                                             "CumQty", "0"
                                     )
-                            result.add(dcNew.build())
+                            context.send(dcNew.build())
                         }
                         "2" -> {
                             // Useful variables for buy-side
@@ -197,7 +199,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order2fix1.build())
+                            context.send(trader1Order2fix1.build())
                             //DropCopy
                             val trader1Order2dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                     .copyFields(incomeMessage,
@@ -225,7 +227,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order2dc1.build())
+                            context.send(trader1Order2dc1.build())
                             // ER FF Order1 for Trader1
                             val execReportId2 = execId.incrementAndGet()
                             val transTime2 = LocalDateTime.now().toString()
@@ -255,7 +257,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order1fix1.build())
+                            context.send(trader1Order1fix1.build())
                             //DropCopy
                             val trader1Order1dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                     .copyFields(incomeMessage,
@@ -283,7 +285,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order1dc1.build())
+                            context.send(trader1Order1dc1.build())
                             // ER1 PF Order3 for Trader2
                             val repeating2 = message().addFields("NoPartyIDs", listOf(
                                     message().addFields(
@@ -340,7 +342,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3fix1.build())
+                            context.send(trader2Order3fix1.build())
                             //DropCopy
                             val trader2Order3dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server2")
                                     .copyFields(incomeMessage,
@@ -368,7 +370,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3dc1.build())
+                            context.send(trader2Order3dc1.build())
                             // ER2 PF Order3 for Trader2
                             val execReportId4 = execId.incrementAndGet()
                             val trader2Order3fix2 = message("ExecutionReport", Direction.FIRST, "fix-demo-server2")
@@ -397,7 +399,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3fix2.build())
+                            context.send(trader2Order3fix2.build())
                             //DropCopy
                             val trader2Order3dc2 = message("ExecutionReport", Direction.FIRST, "dc-demo-server2")
                                     .copyFields(incomeMessage,
@@ -425,7 +427,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3dc2.build())
+                            context.send(trader2Order3dc2.build())
                             // Extra ER3 FF Order3 for Trader2 as testcase
                             val execReportIdX = execId.incrementAndGet()
                             val trader2Order3fixX = message("ExecutionReport", Direction.FIRST, "fix-demo-server2")
@@ -454,7 +456,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "Extra Execution Report"
                                     )
-                            result.add(trader2Order3fixX.build())
+                            context.send(trader2Order3fixX.build())
                             // ER3 CC Order3 for Trader2
                             val execReportId5 = execId.incrementAndGet()
                             val transTime3 = LocalDateTime.now().toString()
@@ -482,7 +484,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "ExecID", execReportId5,
                                             "Text", "The remaining part of simulated order has been expired"
                                     )
-                            result.add(trader2Order3fix3.build())
+                            context.send(trader2Order3fix3.build())
                             //DropCopy
                             val trader2Order3dc3 = message("ExecutionReport", Direction.FIRST, "dc-demo-server2")
                                     .copyFields(incomeMessage,
@@ -508,7 +510,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "ExecID", execReportId5,
                                             "Text", "The remaining part of simulated order has been expired"
                                     )
-                            result.add(trader2Order3dc3.build())
+                            context.send(trader2Order3dc3.build())
                         }
                     }
                 }
@@ -542,7 +544,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "OrdStatus", "0",
                                             "CumQty", "0"
                                     )
-                            result.add(fixNew.build())
+                            context.send(fixNew.build())
                             // DropCopy
                             val dcNew = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                     .copyFields(incomeMessage,  // fields from NewOrder
@@ -569,7 +571,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "OrdStatus", "0",
                                             "CumQty", "0"
                                     )
-                            result.add(dcNew.build())
+                            context.send(dcNew.build())
                         }
                         "2" -> {
                             // Useful variables for buy-side
@@ -643,7 +645,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order2fix1.build())
+                            context.send(trader1Order2fix1.build())
                             //DropCopy
                             val trader1Order2dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                     .copyFields(incomeMessage,
@@ -671,7 +673,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order2dc1.build())
+                            context.send(trader1Order2dc1.build())
                             // ER FF Order1 for Trader1
                             val execReportId2 = execId.incrementAndGet()
                             val transTime2 = LocalDateTime.now().toString()
@@ -701,7 +703,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order1fix1.build())
+                            context.send(trader1Order1fix1.build())
                             //DropCopy
                             val trader1Order1dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                     .copyFields(incomeMessage,
@@ -729,7 +731,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order1dc1.build())
+                            context.send(trader1Order1dc1.build())
                             // ER1 PF Order3 for Trader2
                             val repeating2 = message().addFields("NoPartyIDs", listOf(
                                     message().addFields(
@@ -786,7 +788,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3fix1.build())
+                            context.send(trader2Order3fix1.build())
                             //DropCopy
                             val trader2Order3dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server2")
                                     .copyFields(incomeMessage,
@@ -814,7 +816,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3dc1.build())
+                            context.send(trader2Order3dc1.build())
                             // ER2 PF Order3 for Trader2
                             val execReportId4 = execId.incrementAndGet()
                             val trader2Order3fix2 = message("ExecutionReport", Direction.FIRST, "fix-demo-server2")
@@ -843,7 +845,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "OrderCapacity", "P",  // Incorrect value as testcase
                                             "AccountType", "2"     // Incorrect value as testcase
                                     )
-                            result.add(trader2Order3fix2.build())
+                            context.send(trader2Order3fix2.build())
                             //DropCopy
                             val trader2Order3dc2 = message("ExecutionReport", Direction.FIRST, "dc-demo-server2")
                                     .copyFields(incomeMessage,
@@ -871,7 +873,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3dc2.build())
+                            context.send(trader2Order3dc2.build())
                             // ER3 CC Order3 for Trader2
                             val execReportId5 = execId.incrementAndGet()
                             val transTime3 = LocalDateTime.now().toString()
@@ -899,7 +901,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "ExecID", execReportId5,
                                             "Text", "The remaining part of simulated order has been expired"
                                     )
-                            result.add(trader2Order3fix3.build())
+                            context.send(trader2Order3fix3.build())
                             //DropCopy
                             val trader2Order3dc3 = message("ExecutionReport", Direction.FIRST, "dc-demo-server2")
                                     .copyFields(incomeMessage,
@@ -925,7 +927,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "ExecID", execReportId5,
                                             "Text", "The remaining part of simulated order has been expired"
                                     )
-                            result.add(trader2Order3dc3.build())
+                            context.send(trader2Order3dc3.build())
                         }
                     }
                 }
@@ -938,7 +940,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                             "BusinessRejectReason", "2",
                             "BusinessRejectRefID", incomeMessage.getField("ClOrdID")!!.getString()
                     )
-                    result.add(bmrej.build())
+                    context.send(bmrej.build())
                 }
                 else -> {  // Expectedly correct ERs
                     when (incomeMessage.getString("Side")) {
@@ -970,7 +972,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "OrdStatus", "0",
                                             "CumQty", "0"
                                     )
-                            result.add(fixNew.build())
+                            context.send(fixNew.build())
                             // DropCopy
                             val dcNew = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                     .copyFields(incomeMessage,  // fields from NewOrder
@@ -997,7 +999,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "OrdStatus", "0",
                                             "CumQty", "0"
                                     )
-                            result.add(dcNew.build())
+                            context.send(dcNew.build())
                         }
                         "2" -> {
                             // Useful variables for buy-side
@@ -1071,7 +1073,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order2fix1.build())
+                            context.send(trader1Order2fix1.build())
                             //DropCopy
                             val trader1Order2dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                     .copyFields(incomeMessage,
@@ -1099,7 +1101,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order2dc1.build())
+                            context.send(trader1Order2dc1.build())
                             // ER FF Order1 for Trader1
                             val execReportId2 = execId.incrementAndGet()
                             val transTime2 = LocalDateTime.now().toString()
@@ -1129,7 +1131,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order1fix1.build())
+                            context.send(trader1Order1fix1.build())
                             //DropCopy
                             val trader1Order1dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                     .copyFields(incomeMessage,
@@ -1157,7 +1159,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been fully traded"
                                     )
-                            result.add(trader1Order1dc1.build())
+                            context.send(trader1Order1dc1.build())
                             // ER1 PF Order3 for Trader2
                             val repeating2 = message().addFields("NoPartyIDs", listOf(
                                     message().addFields(
@@ -1214,7 +1216,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3fix1.build())
+                            context.send(trader2Order3fix1.build())
                             //DropCopy
                             val trader2Order3dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server2")
                                     .copyFields(incomeMessage,
@@ -1242,7 +1244,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID1,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3dc1.build())
+                            context.send(trader2Order3dc1.build())
                             // ER2 PF Order3 for Trader2
                             val execReportId4 = execId.incrementAndGet()
                             val trader2Order3fix2 = message("ExecutionReport", Direction.FIRST, "fix-demo-server2")
@@ -1271,7 +1273,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3fix2.build())
+                            context.send(trader2Order3fix2.build())
                             //DropCopy
                             val trader2Order3dc2 = message("ExecutionReport", Direction.FIRST, "dc-demo-server2")
                                     .copyFields(incomeMessage,
@@ -1299,7 +1301,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "TrdMatchID", tradeMatchID2,
                                             "Text", "The simulated order has been partially traded"
                                     )
-                            result.add(trader2Order3dc2.build())
+                            context.send(trader2Order3dc2.build())
                             // ER3 CC Order3 for Trader2
                             val execReportId5 = execId.incrementAndGet()
                             val transTime3 = LocalDateTime.now().toString()
@@ -1327,7 +1329,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "ExecID", execReportId5,
                                             "Text", "The remaining part of simulated order has been expired"
                                     )
-                            result.add(trader2Order3fix3.build())
+                            context.send(trader2Order3fix3.build())
                             //DropCopy
                             val trader2Order3dc3 = message("ExecutionReport", Direction.FIRST, "dc-demo-server2")
                                     .copyFields(incomeMessage,
@@ -1353,12 +1355,11 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                                             "ExecID", execReportId5,
                                             "Text", "The remaining part of simulated order has been expired"
                                     )
-                            result.add(trader2Order3dc3.build())
+                            context.send(trader2Order3dc3.build())
                         }
                     }
                 }
             }
         }
-        return result
     }
 }

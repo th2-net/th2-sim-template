@@ -1,5 +1,4 @@
 buildscript {
-
     ext {
         kotlin_version = "1.3.72"
     }
@@ -51,10 +50,10 @@ repositories {
 dependencies {
     api platform('com.exactpro.th2:bom:2.10.0')
 
-    implementation "com.exactpro.th2:sim:2.4.0"
-    implementation "com.exactpro.th2:common"
-    api "com.exactpro.th2:grpc-sim"
-    api "com.exactpro.th2:grpc-sim-template:2.4.0"
+    implementation "com.exactpro.th2:sim:3.0.1"
+    implementation "com.exactpro.th2:common:3.0.3"
+    api "com.exactpro.th2:grpc-sim:3.0.0"
+    api "com.exactpro.th2:grpc-sim-template:3.0.0"
     //api "com.exactpro.th2:grpc-sim-${grpc_suffix}${grpc_version.isEmpty() ? "" : ":${grpc_version}"}"
     implementation "com.exactpro.th2:grpc-common"
 
