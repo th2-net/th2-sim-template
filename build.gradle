@@ -1,26 +1,11 @@
-buildscript {
-    ext {
-        kotlin_version = "1.3.72"
-    }
-
-    repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
-    }
-}
-
 plugins {
     id 'java'
+    id 'java-library'
+    id 'maven-publish'
     id 'application'
     id 'com.palantir.docker' version '0.25.0'
     id 'org.jetbrains.kotlin.jvm' version '1.3.72'
 }
-
-apply plugin: 'maven-publish'
-apply plugin: 'java-library'
 
 ext {
     sharedDir           = file("${project.rootDir}/shared")
@@ -35,10 +20,6 @@ repositories {
         url sharedDir
     }
     mavenCentral()
-    maven {
-        name 'Bintray'
-        url 'https://dl.bintray.com/exactpro/th2'
-    }
     mavenLocal()
 
     configurations.all {
@@ -48,14 +29,12 @@ repositories {
 }
 
 dependencies {
-    api platform('com.exactpro.th2:bom:2.10.0')
+    api platform('com.exactpro.th2:bom:3.0.0')
 
-    implementation "com.exactpro.th2:sim:3.0.1"
-    implementation "com.exactpro.th2:common:3.0.3"
-    api "com.exactpro.th2:grpc-sim:3.0.0"
-    api "com.exactpro.th2:grpc-sim-template:3.0.0"
+    implementation "com.exactpro.th2:sim:3.5.0"
+    implementation "com.exactpro.th2:common:3.13.4"
+    api "com.exactpro.th2:grpc-sim-template:3.1.0"
     //api "com.exactpro.th2:grpc-sim-${grpc_suffix}${grpc_version.isEmpty() ? "" : ":${grpc_version}"}"
-    implementation "com.exactpro.th2:grpc-common"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlin_version}"
