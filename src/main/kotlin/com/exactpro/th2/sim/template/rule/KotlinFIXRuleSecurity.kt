@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.simulator.template.rule
 
+import com.exactpro.th2.common.grpc.EventID
 import com.exactpro.th2.common.grpc.Message
 import com.exactpro.th2.common.grpc.Value
 import com.exactpro.th2.common.message.*
@@ -46,6 +47,7 @@ class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
                     "Text", "Incorrect instrument",
                     "SessionRejectReason", "99"
             )
+            //reject.parentEventId = EventID.newBuilder().setId(context.rootEventId).build()
             context.send(reject.build())
         }
         else {
@@ -58,6 +60,7 @@ class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
                         "SecurityTradingStatus", "20",
                         "Text", "Unknown or Invalid instrument"
                 )
+                //unknownInstr.parentEventId = EventID.newBuilder().setId(context.rootEventId).build()
                 context.send(unknownInstr.build())
             } else {
                 val SecurityStatus1 = message("SecurityStatus").addFields(
@@ -79,10 +82,11 @@ class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
                         "FirstPx", "54",
                         "Text", "The simulated SecurityStatus has been sent"
                 )
+                //SecurityStatus1.parentEventId = EventID.newBuilder().setId(context.rootEventId).build()
                 context.send(SecurityStatus1.build())
             }
         }
 
-        
+
     }
 }
