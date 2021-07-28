@@ -1,7 +1,7 @@
 ## Overview
 This version of sim used for the demo [ver-1.5.3-main_scenario](https://github.com/th2-net/th2-infra-schema-demo/tree/ver-1.5.3-main_scenario).
 
-ℹ️This simulator emulates a test system and is used only to demonstrate the capabilities of th2. 
+ℹ️This custom component is based on [th2-sim](https://github.com/th2-net/th2-sim-template/blob/master/README.md) and emulates a test system. It is used only to demonstrate the capabilities of th2. 
 The simulator is able to respond to NewOrderSingle(FIX) messages and simulate a trade based on a specific scenario. 
 Generation of sample files is also implemented in the simulator for demonstration purposes. 
 
