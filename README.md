@@ -1,5 +1,5 @@
 ## Overview
-This version of sim used for the demo [ver-1.5.3-main_scenario](https://github.com/th2-net/th2-infra-schema-demo/tree/ver-1.5.3-main_scenario).
+This version of sim used for the demo [ver-1.5.4-main_scenario](https://github.com/th2-net/th2-infra-schema-demo/tree/ver-1.5.4-main_scenario).
 
 ℹ️This custom component is based on [th2-sim](https://github.com/th2-net/th2-sim-template/blob/master/README.md) and emulates a test system. It is used only to demonstrate the capabilities of th2. 
 The simulator is able to respond to NewOrderSingle(FIX) messages and simulate a trade based on a specific scenario. 
@@ -10,13 +10,13 @@ All information that should be saved - should be saved into the database.
 
 
 ## Links
-**Schema example:** https://github.com/th2-net/th2-infra-schema-demo/tree/ver-1.5.3-main_scenario
+**Schema example:** https://github.com/th2-net/th2-infra-schema-demo/tree/ver-1.5.4-main_scenario
 
-**Sim configuration:** https://github.com/th2-net/th2-infra-schema-demo/blob/ver-1.5.3-main_scenario/boxes/sim-demo.yml
+**Sim configuration:** https://github.com/th2-net/th2-infra-schema-demo/blob/ver-1.5.4-main_scenario/boxes/sim-demo.yml
 
 **Instructions to launch application as External Box:** https://github.com/th2-net/th2-documentation/wiki/Connecting-external-box-to-cluster-using-kubectl
 
-**Test script:** https://github.com/th2-net/th2-demo-script/tree/ver-1.5.3-main_scenario
+**Test script:** https://github.com/th2-net/th2-demo-script/tree/ver-1.5.4-main_scenario
 
 ### Directory for sample files
 This sim run locally outside the cluster.
