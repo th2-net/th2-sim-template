@@ -1,4 +1,4 @@
-package com.exactpro.th2.sim.template.rule.test.examples ///*******************************************************************************
+///*******************************************************************************
 // * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
 // *
 // * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@ package com.exactpro.th2.sim.template.rule.test.examples ///********************
 // * See the License for the specific language governing permissions and
 // * limitations under the License.
 // ******************************************************************************/
-//package com.exactpro.th2.sim.template.rule.test
+//package com.exactpro.th2.sim.template.rule.test.examples
 //
 //import com.exactpro.th2.common.grpc.MessageBatch
 //import com.exactpro.th2.common.message.addFields
