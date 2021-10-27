@@ -1,4 +1,4 @@
-///*******************************************************************************
+package com.exactpro.th2.sim.template.rule.test.examples ///*******************************************************************************
 // * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
 // *
 // * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,7 @@
 //import com.exactpro.th2.sim.rule.test.AbstractRuleTest
 //import com.exactpro.th2.sim.template.rule.TemplateFixRule
 //
-//class TestTemplateFixRulePositive : AbstractRuleTest() {
+//class TestDefaultRules : AbstractRuleTest() {
 //
 //    override fun createMessageBatch(index: Int): MessageBatch? = MessageBatch.newBuilder().addMessages(message("NewOrderSingle").apply {
 //        if (index % 4 == 0) {
@@ -38,12 +38,11 @@
 //
 //    override fun addRules(simulator: ISimulator, sessionAlias: String) {
 //        simulator.apply {
-//            addRule(TemplateFixRule(mapOf("ClOrdId" to "order_id_1".toValue())), sessionAlias)
+//            addDefaultRule(addRule(TemplateFixRule(mapOf("ClOrdId" to "order_id_1".toValue())), sessionAlias))
 //        }
 //    }
 //
 //    override fun getPathLoggingFile(): String? = "./output.csv"
 //
 //    override fun checkResultMessages(index: Int, messageBatches: MutableList<MessageBatch>): Boolean = (index % 4 != 0 || messageBatches.size == 1 && messageBatches[0].messagesCount == 1 && messageBatches[0].messagesList[0].metadata.messageType == "ExecutionReport")
-//
 //}

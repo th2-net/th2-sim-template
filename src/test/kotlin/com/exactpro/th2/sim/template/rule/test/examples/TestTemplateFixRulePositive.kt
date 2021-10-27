@@ -1,4 +1,4 @@
-///*******************************************************************************
+package com.exactpro.th2.sim.template.rule.test.examples ///*******************************************************************************
 // * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
 // *
 // * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,15 +23,14 @@
 //import com.exactpro.th2.sim.rule.test.AbstractRuleTest
 //import com.exactpro.th2.sim.template.rule.TemplateFixRule
 //
-//class TestSomeRules : AbstractRuleTest() {
-//
+//class TestTemplateFixRulePositive : AbstractRuleTest() {
 //
 //    override fun createMessageBatch(index: Int): MessageBatch? = MessageBatch.newBuilder().addMessages(message("NewOrderSingle").apply {
 //        if (index % 4 == 0) {
-//            addFields("ClOrdId", "ord_1")
+//            addFields("ClOrdId", "order_id_1", "1", "1", "2", "2")
 //        }
 //        else {
-//            addFields("ClOrdId", "ord_2")
+//            addFields("ClOrdId", "order_id_2")
 //        }
 //    } .build()).build()
 //
@@ -39,8 +38,7 @@
 //
 //    override fun addRules(simulator: ISimulator, sessionAlias: String) {
 //        simulator.apply {
-//            addRule(TemplateFixRule(mapOf("ClOrdId" to "ord_1".toValue())), sessionAlias)
-//            addRule(TemplateFixRule(mapOf("ClOrdId" to "ord_2".toValue())), sessionAlias)
+//            addRule(TemplateFixRule(mapOf("ClOrdId" to "order_id_1".toValue())), sessionAlias)
 //        }
 //    }
 //
