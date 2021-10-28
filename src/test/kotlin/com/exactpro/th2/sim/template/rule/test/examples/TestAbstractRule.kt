@@ -46,8 +46,8 @@ class TestAbstractRule {
             rule.assertTriggered(/* test input message */ message("NewOrderSingle").apply {
                 addFields("field1", 45, "field2", 45, "field3", "field3 test value")
             }.build())
-            assertSent { actual: Message ->
-                Assertions.assertEquals(actual.messageType, "ExecutionReport")
+            assertSent(Message::class.java) { actual:  Message ->
+                Assertions.assertEquals(actual.messageType , "ExecutionReport")
             }
         }
     }
