@@ -1,6 +1,6 @@
 package com.exactpro.th2.sim.template.rule.test.api
 
-import com.exactpro.th2.common.grpc.Event
+import com.exactpro.th2.common.event.Event
 import com.exactpro.th2.common.grpc.Message
 import com.exactpro.th2.common.grpc.MessageBatch
 import com.exactpro.th2.sim.rule.IRule
@@ -61,8 +61,8 @@ class TestRuleContext : IRuleContext {
         return "testEventID"
     }
 
-    override fun sendEvent(event: com.exactpro.th2.common.event.Event) {
-        results.add(event.toProtoEvent(rootEventId))
+    override fun sendEvent(event: Event) {
+        results.add(event)
         logger.debug { "Event sent: $event" }
     }
 
