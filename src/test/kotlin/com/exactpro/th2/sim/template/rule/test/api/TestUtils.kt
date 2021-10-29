@@ -1,6 +1,5 @@
 package com.exactpro.th2.sim.template.rule.test.api
 
-
 import com.exactpro.th2.common.grpc.Message
 import com.exactpro.th2.common.grpc.MessageBatch
 import com.exactpro.th2.common.message.messageType
@@ -8,7 +7,6 @@ import com.google.protobuf.TextFormat
 import org.junit.jupiter.api.Assertions
 import org.junit.platform.commons.util.StringUtils
 import org.opentest4j.AssertionFailedError
-
 
 fun assertEqualsBatches(expected: MessageBatch, actual: MessageBatch, lazyMessage: () -> String? = {null}) {
     Assertions.assertEquals(expected.messagesCount, actual.messagesCount) {"wrong count of messages in batch: \n${TextFormat.shortDebugString(actual)}"}
@@ -44,7 +42,6 @@ fun assertEqualsMessages(expected: Message, actual: Message, lazyMessage: () -> 
             e.cause
         )
     }
-
 }
 
 fun buildPrefix(message: String?): String {

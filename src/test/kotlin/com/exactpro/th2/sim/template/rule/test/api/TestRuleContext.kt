@@ -12,6 +12,7 @@ import com.exactpro.th2.sim.rule.action.impl.MessageSender
 import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.fail
+import java.time.Duration
 import java.util.Deque
 import java.util.LinkedList
 import java.util.Queue
@@ -84,34 +85,20 @@ class TestRuleContext : IRuleContext {
         logger.debug { "Rule ${this.javaClass.name} was not triggered" }
     }
 
-    fun IRule.assertTriggered(testMessage: Message, failedMessage: String? = null) {
+    fun IRule.assertTriggered(testMessage: Message, failedMessage: String? = null, duration: Duration = Duration.ZERO) {
         if (!checkTriggered(testMessage)) {
             fail { "${buildPrefix(failedMessage)}Rule ${this::class.simpleName} expected: <triggered> but was: <not triggered>" }
         }
         handle(this@TestRuleContext, testMessage)
+        Thread.sleep(duration.toMillis())
         removeRule()
-        logger.debug { "Rule ${this.javaClass.name} was successfully triggered" }
+        logger.debug { "Rule ${this.javaClass.name} was successfully triggered after $duration delay" }
     }
 
-    fun IRule.assertTriggered(testMessage: Message, delay: Long, unit: TimeUnit = TimeUnit.MILLISECONDS, failedMessage: String? = null) {
-        if (!checkTriggered(testMessage)) {
-            fail { "${buildPrefix(failedMessage)}Rule ${this::class.simpleName} expected: <triggered> but was: <not triggered>" }
-        }
-        handle(this@TestRuleContext, testMessage)
-        unit.sleep(delay)
-        removeRule()
-        logger.debug { "Rule ${this.javaClass.name} was successfully triggered after $delay (${unit.name}) delay" }
-    }
-
-    fun IRule.emulateTouch(args: Map<String, String>) {
+    fun IRule.touch(args: Map<String, String>, duration: Duration = Duration.ZERO) {
         this.touch(this@TestRuleContext, args)
-        logger.debug { "Rule ${this.javaClass.name} was successfully touched" }
-    }
-
-    fun IRule.emulateTouch(args: Map<String, String>, delay: Long, unit: TimeUnit = TimeUnit.MILLISECONDS) {
-        this.touch(this@TestRuleContext, args)
-        unit.sleep(delay)
-        logger.debug { "Rule ${this.javaClass.name} was successfully touched after $delay (${unit.name}) delay" }
+        Thread.sleep(duration.toMillis())
+        logger.debug { "Rule ${this.javaClass.name} was successfully touched after $duration delay" }
     }
 
     fun assertNothingSent(failedMessage: String? = null) {
