@@ -100,7 +100,18 @@ class TestRuleContext : IRuleContext {
         handle(this@TestRuleContext, testMessage)
         unit.sleep(delay)
         removeRule()
-        logger.debug { "Rule ${this.javaClass.name} was successfully triggered" }
+        logger.debug { "Rule ${this.javaClass.name} was successfully triggered after $delay (${unit.name}) delay" }
+    }
+
+    fun IRule.emulateTouch(args: Map<String, String>) {
+        this.touch(this@TestRuleContext, args)
+        logger.debug { "Rule ${this.javaClass.name} was successfully touched" }
+    }
+
+    fun IRule.emulateTouch(args: Map<String, String>, delay: Long, unit: TimeUnit = TimeUnit.MILLISECONDS) {
+        this.touch(this@TestRuleContext, args)
+        unit.sleep(delay)
+        logger.debug { "Rule ${this.javaClass.name} was successfully touched after $delay (${unit.name}) delay" }
     }
 
     fun assertNothingSent(failedMessage: String? = null) {
