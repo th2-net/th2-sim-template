@@ -13,7 +13,7 @@
 // * See the License for the specific language governing permissions and
 // * limitations under the License.
 // ******************************************************************************/
-//package com.exactpro.th2.sim.template.rule.test
+//package com.exactpro.th2.sim.template.rule.test.examples
 //
 //import com.exactpro.th2.common.grpc.MessageBatch
 //import com.exactpro.th2.common.message.addFields
@@ -23,14 +23,15 @@
 //import com.exactpro.th2.sim.rule.test.AbstractRuleTest
 //import com.exactpro.th2.sim.template.rule.TemplateFixRule
 //
-//class TestTemplateFixRulePositive : AbstractRuleTest() {
+//class TestSomeRules : AbstractRuleTest() {
+//
 //
 //    override fun createMessageBatch(index: Int): MessageBatch? = MessageBatch.newBuilder().addMessages(message("NewOrderSingle").apply {
 //        if (index % 4 == 0) {
-//            addFields("ClOrdId", "order_id_1", "1", "1", "2", "2")
+//            addFields("ClOrdId", "ord_1")
 //        }
 //        else {
-//            addFields("ClOrdId", "order_id_2")
+//            addFields("ClOrdId", "ord_2")
 //        }
 //    } .build()).build()
 //
@@ -38,7 +39,8 @@
 //
 //    override fun addRules(simulator: ISimulator, sessionAlias: String) {
 //        simulator.apply {
-//            addRule(TemplateFixRule(mapOf("ClOrdId" to "order_id_1".toValue())), sessionAlias)
+//            addRule(TemplateFixRule(mapOf("ClOrdId" to "ord_1".toValue())), sessionAlias)
+//            addRule(TemplateFixRule(mapOf("ClOrdId" to "ord_2".toValue())), sessionAlias)
 //        }
 //    }
 //
