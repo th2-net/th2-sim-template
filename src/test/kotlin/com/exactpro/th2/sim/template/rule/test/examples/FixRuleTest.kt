@@ -8,6 +8,8 @@ import com.exactpro.th2.common.message.messageType
 import com.exactpro.th2.common.value.toValue
 import com.exactpro.th2.sim.template.rule.KotlinFIXRule
 import com.exactpro.th2.sim.template.rule.test.api.assertInt
+import com.exactpro.th2.sim.template.rule.test.api.assertMessage
+import com.exactpro.th2.sim.template.rule.test.api.assertString
 import com.exactpro.th2.sim.template.rule.test.api.testRule
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -172,23 +174,17 @@ class FixRuleTest {
                     "Price", "Price value",
                     "BeginString", "BeginString value"
                 )
+                addField("header", message().apply {
+                    addField("MsgSeqNum", 123)
+                })
             }.build())
 
             assertSent(Message::class.java) { message ->
                 Assertions.assertEquals("BusinessMessageReject", message.messageType)
+                message.assertString("BusinessRejectRefID",  "ClOrdID value")
+                message.assertInt("RefSeqNum", 123)
             }
 
-            rule.assertTriggered(message("NewOrderSingle").apply {
-                addField("check", "true")
-                addFields("Side", "wrong")
-            }.build())
-            assertNothingSent()
-
-            rule.assertNotTriggered(message("NewOrderSingle").apply {
-                addField("check", "false")
-                addFields("Side", "wrong")
-            }.build())
-            assertNothingSent()
         }
     }
 }
