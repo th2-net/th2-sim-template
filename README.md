@@ -1,4 +1,5 @@
-# Overview
+# th2 sim template
+
 This project demonstrates how to organize your project with custom rules for [th2-sim](https://github.com/th2-net/th2-sim).
 
 This project implemented gRPC API, which is described in [th2-grpc-sim-template](https://github.com/th2-net/th2-grpc-sim-template/blob/master/src/main/proto/th2_grpc_sim_template/sim_template.proto "sim_template.proto")
@@ -48,6 +49,9 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 ![picture](scheme.png)
 
 ## Release notes
+
+### 3.3.1
++ Add Gradle plugin for proto descriptors creation
 
 ### 3.2.2
 + Update libraries version

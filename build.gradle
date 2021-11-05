@@ -1,3 +1,19 @@
+buildscript {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/th2-net/th2-gradle-plugin")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+        dependencies {
+            classpath "com.exactpro.th2:th2-gradle-plugin:0.1.7"
+        }
+    }
+}
+
 plugins {
     id 'java'
     id 'java-library'
@@ -5,6 +21,13 @@ plugins {
     id 'application'
     id 'com.palantir.docker' version '0.25.0'
     id 'org.jetbrains.kotlin.jvm' version '1.5.10'
+}
+
+apply plugin: 'th2plugin'
+
+parameters {
+    namePatterns = ["grpc"]
+    outputDirectory = "."
 }
 
 ext {
