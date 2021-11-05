@@ -1,8 +1,5 @@
 FROM gradle:6.6-jdk11 AS build
 
-ARG GITHUB_ACTOR
-ARG GITHUB_TOKEN
-
 COPY ./ .
 RUN ./gradlew clean build dockerPrepare
 
