@@ -125,13 +125,12 @@ fun <T> Message.assertValue(name: String, expected: T? = null): T {
         is Double -> this.getDouble(name)
         is List<*> -> this.getList(name)
         is String -> this.getString(name)
-        null -> {}
+        null -> this[name]
         else -> throw RuntimeException("This type for assertion of field value is not supported")
     }!!
     expected?.let {
         Assertions.assertEquals(expected, actual) {"Field value was different"}
-    }
+    } ?: Assertions.assertNull(actual) {"Field value wasn't null"}
     return actual as T
 }
-
 
