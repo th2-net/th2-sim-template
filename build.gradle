@@ -1,3 +1,15 @@
+buildscript {
+    repositories {
+        maven {
+            name 'Sonatype_snapshots'
+            url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+        }
+    }
+    dependencies {
+        classpath "com.exactpro.th2:box-descriptor-generator:0.1.10"
+    }
+}
+
 plugins {
     id 'java'
     id 'java-library'
@@ -5,6 +17,13 @@ plugins {
     id 'application'
     id 'com.palantir.docker' version '0.25.0'
     id 'org.jetbrains.kotlin.jvm' version '1.5.10'
+}
+
+apply plugin: 'th2plugin'
+
+parameters {
+    namePatterns = ["grpc"]
+    outputDirectory = "."
 }
 
 ext {
