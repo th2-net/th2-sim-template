@@ -1,29 +1,11 @@
-buildscript {
-    repositories {
-        maven {
-            name 'Sonatype_snapshots'
-            url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-        }
-    }
-    dependencies {
-        classpath "com.exactpro.th2:box-descriptor-generator:0.1.10"
-    }
-}
-
 plugins {
     id 'java'
     id 'java-library'
+    id 'java-test-fixtures'
     id 'maven-publish'
     id 'application'
     id 'com.palantir.docker' version '0.25.0'
     id 'org.jetbrains.kotlin.jvm' version '1.5.10'
-}
-
-apply plugin: 'th2plugin'
-
-parameters {
-    namePatterns = ["grpc"]
-    outputDirectory = "."
 }
 
 ext {
@@ -54,7 +36,7 @@ repositories {
 dependencies {
     api platform('com.exactpro.th2:bom:3.0.0')
 
-    implementation "com.exactpro.th2:sim:3.8.0"
+    implementation "com.exactpro.th2:sim:3.9.0-testutils-1483806879-SNAPSHOT"
     implementation "com.exactpro.th2:common:3.21.2"
     api "com.exactpro.th2:grpc-sim-template:3.1.2"
 
@@ -67,6 +49,7 @@ dependencies {
 
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    testImplementation testFixtures( "com.exactpro.th2:sim:3.9.0-testutils-1483806879-SNAPSHOT")
 }
 
 sourceSets {

@@ -7,10 +7,9 @@ import com.exactpro.th2.common.message.message
 import com.exactpro.th2.common.message.messageType
 import com.exactpro.th2.common.value.toValue
 import com.exactpro.th2.sim.template.rule.KotlinFIXRule
+import com.exactpro.th2.sim.template.rule.test.api.TestRuleContext.Companion.testRule
 import com.exactpro.th2.sim.template.rule.test.api.assertInt
-import com.exactpro.th2.sim.template.rule.test.api.assertMessage
 import com.exactpro.th2.sim.template.rule.test.api.assertString
-import com.exactpro.th2.sim.template.rule.test.api.testRule
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
