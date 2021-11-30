@@ -45,6 +45,15 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
 
         private var incomeMsgList = arrayListOf<Message>()
         private var ordIdList = arrayListOf<Int>()
+
+        fun reset() {
+            orderId.set(0)
+            execId.set(0)
+            TrdMatchId.set(0)
+
+            incomeMsgList.clear()
+            ordIdList.clear()
+        }
     }
 
     init {

@@ -50,6 +50,9 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ## Release notes
 
+### 3.5.1 
++ Add tests examples
+
 ### 3.4.0
 + Add Gradle plugin for proto descriptors creation
 
