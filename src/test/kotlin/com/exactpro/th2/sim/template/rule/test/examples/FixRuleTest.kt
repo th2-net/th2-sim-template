@@ -1,5 +1,7 @@
 package com.exactpro.th2.sim.template.rule.test.examples
 
+import com.exactpro.th2.common.assertInt
+import com.exactpro.th2.common.assertString
 import com.exactpro.th2.common.grpc.Message
 import com.exactpro.th2.common.message.addField
 import com.exactpro.th2.common.message.addFields
@@ -8,8 +10,6 @@ import com.exactpro.th2.common.message.messageType
 import com.exactpro.th2.common.value.toValue
 import com.exactpro.th2.sim.template.rule.KotlinFIXRule
 import com.exactpro.th2.sim.template.rule.test.api.TestRuleContext.Companion.testRule
-import com.exactpro.th2.sim.template.rule.test.api.assertInt
-import com.exactpro.th2.sim.template.rule.test.api.assertString
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
@@ -59,13 +59,11 @@ class FixRuleTest {
 
             rule.assertTriggered(message("NewOrderSingle").apply {
                 addField("check", "true")
-                addFields("Side", "1")
-                addFields(
-                    "SecurityID", "INSTR4",
-                    "OrderQty", 123,
-                    "ClOrdID", "ClOrdID value",
-                    "Price", "Price value",
-                )
+                addField("Side", "1")
+                addField("SecurityID", "INSTR4")
+                addField("OrderQty", 123)
+                addField("ClOrdID", "ClOrdID value")
+                addField("Price", "Price value")
             }.build())
 
             assertSent(Message::class.java) { message ->
