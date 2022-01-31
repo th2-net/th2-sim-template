@@ -59,7 +59,18 @@ class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
                         "Text", "Unknown or Invalid instrument"
                 )
                 context.send(unknownInstr.build())
-            } else {
+            }
+            else if (incomeMessage.getString("SecurityID") == "INSTR5") {
+                val unknownInstr = message("SecurityStatus").addFields(
+                    "SecurityID", incomeMessage.getField("SecurityID")!!.getString(),
+                    "SecurityIDSource", incomeMessage.getField("SecurityIDSource")!!.getString(),
+                    "SecurityStatusReqID", incomeMessage.getField("SecurityStatusReqID")!!.getString(),
+                    "UnsolicitedIndicator", "N",
+                    "SecurityTradingStatus", "2",
+                    "Text", "Instrument trading halt"
+                )
+                context.send(unknownInstr.build())
+            }else {
                 val SecurityStatus1 = message("SecurityStatus").addFields(
                         "SecurityID", incomeMessage.getField("SecurityID")!!.getString(),
                         "SecurityIDSource", incomeMessage.getField("SecurityIDSource")!!.getString(),
