@@ -306,9 +306,8 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
     private fun createNoPartyIdsList(connect: String, firm: String): List<Message.Builder> = listOf(
         createPartyMessage("76", connect, "D"),
         createPartyMessage("17", firm, "D"),
-        createPartyMessage("3", "0", "P"),
-        createPartyMessage("122", "0", "P"),
-        createPartyMessage("12", "3", "P")
+        createPartyMessage("3", "0", "N"),
+        createPartyMessage("12", "3", "N")
     )
 
     private fun createPartyMessage(partyRole: String, partyID: String, partyIDSource: String): Message.Builder =
