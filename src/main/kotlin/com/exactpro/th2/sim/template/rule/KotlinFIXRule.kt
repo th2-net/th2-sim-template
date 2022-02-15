@@ -101,6 +101,49 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
             return
         }
 
+        if (instrument == "INSTR7"){
+            val fixNew = message("ExecutionReport")
+                .copyFields(
+                    incomeMessage,
+                    "Side",
+                    "Price",
+                    "CumQty",
+                    "ClOrdID",
+                    "SecurityID",
+                    "SecurityIDSource",
+                    "OrdType",
+                    "OrderQty",
+                    "TradingParty",
+                    "TimeInForce",
+                    "OrderCapacity",
+                    "AccountType"
+                ).addFields(
+                    "TransactTime", LocalDateTime.now(),
+                    "OrderID", ordId1,
+                    "LeavesQty", incomeMessage.getField("OrderQty")!!,
+                    "Text", "Simulated New Order Buy is placed",
+                    "ExecType", "0",
+                    "OrdStatus", "0",
+                    "CumQty", "0"
+                )
+
+            context.send(fixNew.copy().addField("ExecID", execId.incrementAndGet()).build())
+            return
+        }
+        if (instrument == "INSTR8"){
+            context.send(
+                message("BusinessMessageReject").addFields(
+                    "RefTagID", "99",
+                    "RefMsgType", "D",
+                    "RefSeqNum", incomeMessage.getMessage("header")?.getField("MsgSeqNum"),
+                    "Text", "StopPx unset for stop order",
+                    "BusinessRejectReason", "5",
+                    "BusinessRejectRefID", incomeMessage.getField("ClOrdID")
+                ).build()
+            )
+            return
+        }
+
         if (incomeMessage.getInt("Side") == 1) {
             val fixNew = message("ExecutionReport")
                 .copyFields(
