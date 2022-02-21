@@ -71,7 +71,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "TransactTime", LocalDateTime.now(),
                     "OrderID", ordId1,
                     "LeavesQty", incomeMessage.getField("OrderQty")!!,
-                    "Text", "Simulated New Order Buy is placed",
+                    "Text", "Simulated ExecutionReport is sent",
                     "ExecType", "0",
                     "OrdStatus", "0",
                     "CumQty", "0"
