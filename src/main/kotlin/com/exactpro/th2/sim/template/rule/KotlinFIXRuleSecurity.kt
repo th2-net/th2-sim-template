@@ -17,72 +17,84 @@
 package com.exactpro.th2.sim.template.rule
 
 import com.exactpro.th2.common.grpc.Message
+import com.exactpro.th2.common.grpc.Message.Builder
 import com.exactpro.th2.common.grpc.Value
 import com.exactpro.th2.common.message.*
 import com.exactpro.th2.common.value.getMessage
 import com.exactpro.th2.common.value.getString
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
+import java.util.UUID
 
 import java.util.concurrent.atomic.AtomicInteger
 
 class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
+    private val entries = 15722
+    private val CouponRates = listOf<String>("4.25","1.25","3.125","2.75","3.75","5.25")
+    private val SecurityTypes = listOf<String>("REPO","TAXA","YANK","SUPRA")
+    private val Issuers = listOf<String>("Fuji Climber Inc","Fujinomia Bank","MinamiDaito Inaka","Nara Deer","Enoshima Lighthouse")
+    private val CreditRatings = listOf<String>("1","11","11+","111+")
+    private val Symbols = listOf<String>("SYM_4.25_02/11/32_FUN","BOL_5.125_02/01/22_FUN","TAXM_4.25_04/05/42_PA","SYM_9.725_02/07/52_FUN")
+    private val SecurityIDSources = listOf<String>("4","8","W","X")
+    private val CFICodes = listOf<String>("DTOR","DPOV","MPAKH","APANF")
+    private val CouponPaymentDates = listOf<String>("20220715","20220512","20220225","20220313")
+    private val TradingSessionIDs = listOf<String>("1","2","3","4")
+    private val Currencies = listOf<String>("GBP","USD","GEL","EUR")
+    private val SecurityIDs = listOf<String>("UGA278942NDA","FWQ148064HTB","GFC356372LGT","PES249732JTR")
+    private val CountryOfIssues = listOf<String>("USA","JAP","GBR","GEO")
 
-    companion object{
-    private var orderId = AtomicInteger(0)
-    private var execId = AtomicInteger(0)
+    companion object {
+        private var counter = 0
+        private var fragment = ""
     }
 
     init {
-        init("SecurityStatusRequest", field)
+        init("SecurityListRequest", field)
     }
 
     override fun handle(context: IRuleContext, incomeMessage: Message) {
-        if (!incomeMessage.containsFields("SecurityID")){
-            val reject = message("Reject").addFields(
-                    "RefTagID", "48",
-                    "RefMsgType", "f",
-                    "RefSeqNum", incomeMessage.getField("BeginString")?.getMessage()?.getField("MsgSeqNum"),
-                    "Text", "Incorrect instrument",
-                    "SessionRejectReason", "99"
-            )
-            context.send(reject.build())
+        if (counter>3){
+            fragment = "Y"
+            counter=0
         }
-        else {
-            if (incomeMessage.getString("SecurityID") == "INSTR6") {
-                val unknownInstr = message("SecurityStatus").addFields(
-                        "SecurityID", incomeMessage.getField("SecurityID")!!.getString(),
-                        "SecurityIDSource", incomeMessage.getField("SecurityIDSource")!!.getString(),
-                        "SecurityStatusReqID", incomeMessage.getField("SecurityStatusReqID")!!.getString(),
-                        "UnsolicitedIndicator", "N",
-                        "SecurityTradingStatus", "20",
-                        "Text", "Unknown or Invalid instrument"
-                )
-                context.send(unknownInstr.build())
-            } else {
-                val SecurityStatus1 = message("SecurityStatus").addFields(
-                        "SecurityID", incomeMessage.getField("SecurityID")!!.getString(),
-                        "SecurityIDSource", incomeMessage.getField("SecurityIDSource")!!.getString(),
-                        "SecurityStatusReqID", incomeMessage.getField("SecurityStatusReqID")!!.getString(),
-                        "Currency", "RUB",
-                        "MarketID", "Demo Market",
-                        "MarketSegmentID", "NEW",
-                        "TradingSessionID", "1",
-                        "TradingSessionSubID", "3",
-                        "UnsolicitedIndicator", "N",
-                        "SecurityTradingStatus", "17",
-                        "BuyVolume", "0",
-                        "SellVolume", "0",
-                        "HighPx", "56",
-                        "LowPx", "54",
-                        "LastPx", "54",
-                        "FirstPx", "54",
-                        "Text", "The simulated SecurityStatus has been sent"
-                )
-                context.send(SecurityStatus1.build())
-            }
+        else{
+            fragment="N"
+            counter++
         }
 
-        
+        val msg = message("SecurityList").addFields(
+            "SecurityReqID", incomeMessage.getField("SecurityReqID"),
+            "SecurityResponseID", UUID.randomUUID().toString(),
+            "LastFragment", fragment,
+            "TotNoRelatedSym", entries,
+            "SecurityRequestResult", "0",
+            "NoRelatedSym",generateNoRelatedSym(entries)
+        )
+        context.send(msg.build())
     }
+    private fun generateNoRelatedSym(num: Int): List<Builder> {
+        val noRelatedSym:MutableList<Message.Builder> = mutableListOf()
+        for(i in 0..num){
+            noRelatedSym.add(generateEntry())
+
+        }
+
+        return noRelatedSym;
+    }
+
+    private fun generateEntry(): Message.Builder =
+        message().addFields(
+            "CouponRate", CouponRates.random(),
+            "SecurityType", SecurityTypes.random(),
+            "Issuer", Issuers.random(),
+            "CreditRating", CreditRatings.random(),
+            "Symbol", Symbols.random(),
+            "SecurityIDSource", SecurityIDSources.random(),
+            "CFICode", CFICodes.random(),
+            "CouponPaymentDate", CouponPaymentDates.random(),
+            "TradingSessionID", TradingSessionIDs.random(),
+            "Currency", Currencies.random(),
+            "SecurityID", SecurityIDs.random(),
+            "CountryOfIssue", CountryOfIssues.random()
+        )
 }
