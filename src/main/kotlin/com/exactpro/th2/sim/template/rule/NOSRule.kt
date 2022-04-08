@@ -36,7 +36,7 @@ import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
-class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
+class NOSRule(field: Map<String, Value>) : MessageCompareRule() {
 
     companion object {
         private var orderId = AtomicInteger(0)
