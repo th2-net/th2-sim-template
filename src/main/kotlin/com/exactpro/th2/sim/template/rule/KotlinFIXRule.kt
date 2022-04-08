@@ -30,7 +30,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
 
     companion object {
         var reject = false
-        var secondAlias = "client2"
+        var secondAlias = "dc-demo-server1"
     }
 
     init {
