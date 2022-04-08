@@ -31,11 +31,11 @@ import java.util.concurrent.atomic.AtomicInteger
 class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
     private val entries = 15722
     private val CouponRates = listOf<String>("4.25","1.25","3.125","2.75","3.75","5.25")
-    private val SecurityTypes = listOf<String>("REPO","TAXA","YANK","SUPRA")
+    private val SecurityTypes = listOf<String>("EUCD","FUT","PZFJ","TBILL")
     private val Issuers = listOf<String>("Fuji Climber Inc","Fujinomia Bank","MinamiDaito Inaka","Nara Deer","Enoshima Lighthouse")
     private val CreditRatings = listOf<String>("1","11","11+","111+")
     private val Symbols = listOf<String>("SYM_4.25_02/11/32_FUN","BOL_5.125_02/01/22_FUN","TAXM_4.25_04/05/42_PA","SYM_9.725_02/07/52_FUN")
-    private val SecurityIDSources = listOf<String>("4","8","W","X")
+    private val SecurityIDSources = listOf<String>("4","8","A","D")
     private val CFICodes = listOf<String>("DTOR","DPOV","MPAKH","APANF")
     private val CouponPaymentDates = listOf<String>("20220715","20220512","20220225","20220313")
     private val TradingSessionIDs = listOf<String>("1","2","3","4")
