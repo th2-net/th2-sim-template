@@ -43,34 +43,26 @@ class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
     private val SecurityIDs = listOf<String>("UGA278942NDA","FWQ148064HTB","GFC356372LGT","PES249732JTR")
     private val CountryOfIssues = listOf<String>("USA","JAP","GBR","GEO")
 
-    companion object {
-        private var counter = 0
-        private var fragment = ""
-    }
-
     init {
         init("SecurityListRequest", field)
     }
 
     override fun handle(context: IRuleContext, incomeMessage: Message) {
-        if (counter>3){
-            fragment = "Y"
-            counter=0
+        var fragment = "N";
+        for (i in 0 until 5) {
+            if (i == 4) {
+                fragment = "Y";
+            }
+            val msg = message("SecurityList").addFields(
+                "SecurityReqID", incomeMessage.getField("SecurityReqID"),
+                "SecurityResponseID", UUID.randomUUID().toString(),
+                "LastFragment", fragment,
+                "TotNoRelatedSym", entries,
+                "SecurityRequestResult", "0",
+                "NoRelatedSym", generateNoRelatedSym(entries)
+            )
+            context.send(msg.build())
         }
-        else{
-            fragment="N"
-            counter++
-        }
-
-        val msg = message("SecurityList").addFields(
-            "SecurityReqID", incomeMessage.getField("SecurityReqID"),
-            "SecurityResponseID", UUID.randomUUID().toString(),
-            "LastFragment", fragment,
-            "TotNoRelatedSym", entries,
-            "SecurityRequestResult", "0",
-            "NoRelatedSym",generateNoRelatedSym(entries)
-        )
-        context.send(msg.build())
     }
     private fun generateNoRelatedSym(num: Int): List<Builder> {
         val noRelatedSym:MutableList<Message.Builder> = mutableListOf()
