@@ -20,10 +20,13 @@ import com.exactpro.th2.sim.ISimulatorPart
 import com.exactpro.th2.sim.grpc.RuleID
 import com.exactpro.th2.sim.template.grpc.SimTemplateGrpc
 import com.exactpro.th2.sim.template.grpc.TemplateFixRuleCreate
-import com.exactpro.th2.sim.util.ServiceUtils
-import com.exactpro.th2.sim.template.rule.TemplateFixRule
 import com.exactpro.th2.sim.template.rule.KotlinFIXRule
 import com.exactpro.th2.sim.template.rule.KotlinFIXRuleSecurity
+import com.exactpro.th2.sim.template.rule.OrderAmendRule
+import com.exactpro.th2.sim.template.rule.OrderCancelRule
+import com.exactpro.th2.sim.template.rule.OrderNewRule
+import com.exactpro.th2.sim.template.rule.TemplateFixRule
+import com.exactpro.th2.sim.util.ServiceUtils
 import io.grpc.stub.StreamObserver
 
 class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
@@ -42,4 +45,13 @@ class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
 
     override fun createRuleFixSecurity(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
         ServiceUtils.addRule(KotlinFIXRuleSecurity(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+
+    override fun createOrderNewRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(OrderNewRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+
+    override fun createOrderAmendRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(OrderAmendRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+
+    override fun createOrderCancelRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(OrderCancelRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
 }
