@@ -29,7 +29,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
-    private val entries = 15722
+    private val entries = 10
     private val CouponRates = listOf<String>("4.25","1.25","3.125","2.75","3.75","5.25")
     private val SecurityTypes = listOf<String>("EUCD","FUT","PZFJ","TBILL")
     private val Issuers = listOf<String>("Fuji Climber Inc","Fujinomia Bank","MinamiDaito Inaka","Nara Deer","Enoshima Lighthouse")
