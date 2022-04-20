@@ -20,15 +20,11 @@ import com.exactpro.th2.common.grpc.Message
 import com.exactpro.th2.common.grpc.Message.Builder
 import com.exactpro.th2.common.grpc.Value
 import com.exactpro.th2.common.message.*
-import com.exactpro.th2.common.value.getMessage
-import com.exactpro.th2.common.value.getString
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.util.UUID
 
-import java.util.concurrent.atomic.AtomicInteger
-
-class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
+class SecurityRule(field: Map<String, Value>) : MessageCompareRule() {
     private val entries = 10
     private val CouponRates = listOf<String>("4.25","1.25","3.125","2.75","3.75","5.25")
     private val SecurityTypes = listOf<String>("EUCD","FUT","PZFJ","TBILL")
@@ -48,10 +44,10 @@ class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
     }
 
     override fun handle(context: IRuleContext, incomeMessage: Message) {
-        var fragment = "N";
+        var fragment = "N"
         for (i in 0 until 5) {
             if (i == 4) {
-                fragment = "Y";
+                fragment = "Y"
             }
             val msg = message("SecurityList").addFields(
                 "SecurityReqID", incomeMessage.getField("SecurityReqID"),
@@ -71,7 +67,7 @@ class KotlinFIXRuleSecurity(field: Map<String, Value>) : MessageCompareRule() {
 
         }
 
-        return noRelatedSym;
+        return noRelatedSym
     }
 
     private fun generateEntry(): Message.Builder =

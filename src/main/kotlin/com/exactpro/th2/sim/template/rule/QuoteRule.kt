@@ -26,7 +26,7 @@ import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.util.UUID
 
-class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
+class QuoteRule(field: Map<String, Value>) : MessageCompareRule() {
 
     companion object {
         var reject = false

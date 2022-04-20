@@ -20,11 +20,12 @@ import com.exactpro.th2.sim.ISimulatorPart
 import com.exactpro.th2.sim.grpc.RuleID
 import com.exactpro.th2.sim.template.grpc.SimTemplateGrpc
 import com.exactpro.th2.sim.template.grpc.TemplateFixRuleCreate
-import com.exactpro.th2.sim.util.ServiceUtils
-import com.exactpro.th2.sim.template.rule.TemplateFixRule
 import com.exactpro.th2.sim.template.rule.NOSRule
-import com.exactpro.th2.sim.template.rule.KotlinFIXRule
-import com.exactpro.th2.sim.template.rule.KotlinFIXRuleSecurity
+import com.exactpro.th2.sim.template.rule.AmendRule
+import com.exactpro.th2.sim.template.rule.CancelRule
+import com.exactpro.th2.sim.template.rule.QuoteRule
+import com.exactpro.th2.sim.template.rule.SecurityRule
+import com.exactpro.th2.sim.util.ServiceUtils
 import io.grpc.stub.StreamObserver
 
 class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
@@ -35,12 +36,18 @@ class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
         this.simulator = simulator
     }
 
-    override fun createRuleFix(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+    override fun createNOSRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
         ServiceUtils.addRule(NOSRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
 
-    override fun createDemoRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
-        ServiceUtils.addRule(KotlinFIXRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+    override fun createAmendRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(AmendRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
 
-    override fun createRuleFixSecurity(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
-        ServiceUtils.addRule(KotlinFIXRuleSecurity(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+    override fun createCancelRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(CancelRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+
+    override fun createQuoteRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(QuoteRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+
+    override fun createSecurityRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(SecurityRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
 }
