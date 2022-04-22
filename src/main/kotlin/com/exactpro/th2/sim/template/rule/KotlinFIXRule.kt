@@ -195,7 +195,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "LastPx", order2Price,
                     "OrderID", ordIdList[1],
                     "ExecID", execId.incrementAndGet(),
-                    "TrdMatchID", tradeMatchID1
+                    "TrdMatchID", tradeMatchID1,
                 )
 
             context.send(trader1Order2.copy().buildWith { sessionAlias = "fix-demo-server1" })
@@ -210,7 +210,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "LastPx", first.getField("Price"),
                     "OrderID", ordIdList[0],
                     "ExecID", execId.incrementAndGet(),
-                    "TrdMatchID", tradeMatchID2
+                    "TrdMatchID", tradeMatchID2,
                 )
 
             context.send(trader1Order1.copy().buildWith { sessionAlias = "fix-demo-server1" })
@@ -245,7 +245,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                 "CumQty", cumQty1,
                 "LeavesQty", incomeMessage.getInt("OrderQty")!! - cumQty1,
                 "ExecID", execId.incrementAndGet(),
-                "TrdMatchID", tradeMatchID1
+                "TrdMatchID", tradeMatchID1,
             )
 
             // ER1 PF Order3 for Trader2
@@ -260,7 +260,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                 "CumQty", cumQty1 + cumQty2,
                 "LeavesQty", leavesQty2,
                 "ExecID", execId.incrementAndGet(),
-                "TrdMatchID", tradeMatchID2
+                "TrdMatchID", tradeMatchID2,
             )
 
             context.send(trader2Order3Er2.copy().buildWith {
