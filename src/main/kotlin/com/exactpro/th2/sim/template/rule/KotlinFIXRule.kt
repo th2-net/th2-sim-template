@@ -34,6 +34,8 @@ import com.exactpro.th2.common.value.getMessage
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneOffset
 import java.util.concurrent.atomic.AtomicInteger
 
 class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
@@ -45,6 +47,8 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
 
         private var incomeMsgList = arrayListOf<Message>()
         private var ordIdList = arrayListOf<Int>()
+        val MDEntry = arrayListOf<Message>()
+        val TradingTime = arrayListOf<LocalTime>()
 
         fun reset() {
             orderId.set(0)
@@ -53,6 +57,8 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
 
             incomeMsgList.clear()
             ordIdList.clear()
+            MDEntry.clear()
+            TradingTime.clear()
         }
     }
 
@@ -68,8 +74,11 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
         val ordId1 = orderId.incrementAndGet()
 
         ordIdList.add(ordId1)
+        MDEntry.add(incomeMessage)
         while (ordIdList.size > 3) {
             ordIdList.removeAt(0)
+            MDEntry.removeAt(0)
+            TradingTime.removeAt(0)
         }
 
         if (!incomeMessage.hasField("Side")) {
@@ -150,7 +159,8 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
             // ER FF Order2 for Trader1
             val transTime1 = LocalDateTime.now()
             val transTime2 = LocalDateTime.now()
-
+            TradingTime.add(LocalDateTime.now(ZoneOffset.UTC).toLocalTime())
+            TradingTime.add(LocalDateTime.now(ZoneOffset.UTC).toLocalTime())
             val noPartyIdsTrader2Order3 = message().addFields(
                 "NoPartyIDs", createNoPartyIdsList("DEMO-CONN2", "DEMOFIRM1")
             )
@@ -200,7 +210,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "LastPx", first.getField("Price"),
                     "OrderID", ordIdList[0],
                     "ExecID", execId.incrementAndGet(),
-                    "TrdMatchID", tradeMatchID2,
+                    "TrdMatchID", tradeMatchID2
                 )
 
             context.send(trader1Order1.copy().buildWith { sessionAlias = "fix-demo-server1" })
@@ -235,7 +245,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                 "CumQty", cumQty1,
                 "LeavesQty", incomeMessage.getInt("OrderQty")!! - cumQty1,
                 "ExecID", execId.incrementAndGet(),
-                "TrdMatchID", tradeMatchID1,
+                "TrdMatchID", tradeMatchID1
             )
 
             // ER1 PF Order3 for Trader2
@@ -250,7 +260,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                 "CumQty", cumQty1 + cumQty2,
                 "LeavesQty", leavesQty2,
                 "ExecID", execId.incrementAndGet(),
-                "TrdMatchID", tradeMatchID2,
+                "TrdMatchID", tradeMatchID2
             )
 
             context.send(trader2Order3Er2.copy().buildWith {

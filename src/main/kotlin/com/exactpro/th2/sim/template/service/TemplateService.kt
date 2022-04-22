@@ -24,6 +24,7 @@ import com.exactpro.th2.sim.util.ServiceUtils
 import com.exactpro.th2.sim.template.rule.TemplateFixRule
 import com.exactpro.th2.sim.template.rule.KotlinFIXRule
 import com.exactpro.th2.sim.template.rule.KotlinFIXRuleSecurity
+import com.exactpro.th2.sim.template.rule.KotlinFIXRuleMDR
 import io.grpc.stub.StreamObserver
 
 class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
@@ -42,4 +43,7 @@ class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
 
     override fun createRuleFixSecurity(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
         ServiceUtils.addRule(KotlinFIXRuleSecurity(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+
+    override fun createRuleFixMDR(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(KotlinFIXRuleMDR(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
 }
