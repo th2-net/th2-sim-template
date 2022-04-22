@@ -78,7 +78,8 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
         while (ordIdList.size > 3) {
             ordIdList.removeAt(0)
             MDEntry.removeAt(0)
-            TradingTime.removeAt(0)
+            if(TradingTime.isNotEmpty())
+                TradingTime.removeAt(0)
         }
 
         if (!incomeMessage.hasField("Side")) {
