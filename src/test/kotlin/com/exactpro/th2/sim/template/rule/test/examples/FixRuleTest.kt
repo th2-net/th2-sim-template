@@ -40,7 +40,7 @@ class FixRuleTest {
             val rule = KotlinFIXRule(mapOf("check" to "true".toValue()))
 
             // correct type and field check buy without side field
-            rule.assertTriggered(message("NewOrderSingle").apply {
+            rule.assertHandle(message("NewOrderSingle").apply {
                 addField("check", "true")
             }.build())
             assertSent(Message::class.java) {
@@ -57,7 +57,7 @@ class FixRuleTest {
         testRule {
             val rule = KotlinFIXRule(mapOf("check" to "true".toValue()))
 
-            rule.assertTriggered(message("NewOrderSingle").apply {
+            rule.assertHandle(message("NewOrderSingle").apply {
                 addField("check", "true")
                 addField("Side", "1")
                 addField("SecurityID", "INSTR4")
@@ -80,7 +80,7 @@ class FixRuleTest {
 
             assertNothingSent()
 
-            rule.assertTriggered(message("NewOrderSingle").apply {
+            rule.assertHandle(message("NewOrderSingle").apply {
                 addField("check", "true")
                 addFields("Side", "2")
                 addFields(
@@ -108,7 +108,7 @@ class FixRuleTest {
         testRule {
             val rule = KotlinFIXRule(mapOf("check" to "true".toValue()))
 
-            rule.assertTriggered(message("NewOrderSingle").apply {
+            rule.assertHandle(message("NewOrderSingle").apply {
                 addField("check", "true")
                 addFields("Side", "1")
                 addFields(
@@ -133,7 +133,7 @@ class FixRuleTest {
 
             assertNothingSent()
 
-            rule.assertTriggered(message("NewOrderSingle").apply {
+            rule.assertHandle(message("NewOrderSingle").apply {
                 addField("check", "true")
                 addFields("Side", "2")
                 addFields(
@@ -161,7 +161,7 @@ class FixRuleTest {
         testRule {
             val rule = KotlinFIXRule(mapOf("check" to "true".toValue()))
 
-            rule.assertTriggered(message("NewOrderSingle").apply {
+            rule.assertHandle(message("NewOrderSingle").apply {
                 addField("check", "true")
                 addFields("Side", "2")
                 addFields(
