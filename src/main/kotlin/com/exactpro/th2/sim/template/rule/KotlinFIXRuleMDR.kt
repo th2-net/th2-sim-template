@@ -60,7 +60,7 @@ class KotlinFIXRuleMDR(field: Map<String, Value>) : MessageCompareRule() {
                         "MDEntryBuyer",
                         "DEMO-CONN1",
                         "MDEntrySeller",
-                        "DEMO-CONN2",
+                        "DEMOFIRM2",
                         "Text",
                         "Trade data"
                     ), message(
@@ -81,7 +81,7 @@ class KotlinFIXRuleMDR(field: Map<String, Value>) : MessageCompareRule() {
                         "MDEntryBuyer",
                         "DEMO-CONN1",
                         "MDEntrySeller",
-                        "DEMO-CONN2",
+                        "DEMOFIRM2",
                         "Text",
                         "Trade data"
                     )
