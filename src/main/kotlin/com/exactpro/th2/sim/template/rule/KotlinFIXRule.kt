@@ -35,7 +35,6 @@ import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.ZoneOffset
 import java.util.concurrent.atomic.AtomicInteger
 
 class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
@@ -160,8 +159,8 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
             // ER FF Order2 for Trader1
             val transTime1 = LocalDateTime.now()
             val transTime2 = LocalDateTime.now()
-            TradingTime.add(LocalDateTime.now(ZoneOffset.UTC).toLocalTime())
-            TradingTime.add(LocalDateTime.now(ZoneOffset.UTC).toLocalTime())
+            TradingTime.add(transTime1.toLocalTime())
+            TradingTime.add(transTime2.toLocalTime())
             val noPartyIdsTrader2Order3 = message().addFields(
                 "NoPartyIDs", createNoPartyIdsList("DEMO-CONN2", "DEMOFIRM1")
             )
