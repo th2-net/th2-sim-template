@@ -25,6 +25,7 @@ import com.exactpro.th2.sim.template.rule.AmendRule
 import com.exactpro.th2.sim.template.rule.CancelRule
 import com.exactpro.th2.sim.template.rule.QuoteRule
 import com.exactpro.th2.sim.template.rule.SecurityRule
+import com.exactpro.th2.sim.template.rule.DemoScriptRule
 import com.exactpro.th2.sim.util.ServiceUtils
 import io.grpc.stub.StreamObserver
 
@@ -50,4 +51,7 @@ class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
 
     override fun createSecurityRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
         ServiceUtils.addRule(SecurityRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+
+    override fun createDemoScriptRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(DemoScriptRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
 }
