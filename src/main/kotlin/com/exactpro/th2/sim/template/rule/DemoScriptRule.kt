@@ -1127,7 +1127,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             incomeMessage.getField("SecondaryClOrdID")!!.getString() + ",,,,,,,")
 
                 }
-                else -> {  // Expectedly correct ERs
+                "INSTR1", "INSTR2", "INSTR3" -> {  // Expectedly correct ERs
                     when (incomeMessage.getString("Side")) {
                         "1" -> {
                             val execIdNew = execId.incrementAndGet()
