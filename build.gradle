@@ -1,5 +1,6 @@
 buildscript {
     repositories {
+        mavenLocal()
         maven {
             name 'Sonatype_snapshots'
             url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
@@ -53,7 +54,7 @@ repositories {
 }
 
 dependencies {
-    api platform('com.exactpro.th2:bom:3.0.0')
+    api platform('com.exactpro.th2:bom:3.2.0')
 
     implementation "com.exactpro.th2:sim:$sim_version"
     implementation "com.exactpro.th2:common:$common_version"
