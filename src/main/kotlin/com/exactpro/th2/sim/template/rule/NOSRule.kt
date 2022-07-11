@@ -29,7 +29,7 @@ class NOSRule(field: Map<String, Value>) : MessageCompareRule() {
 
         val security_ids_ignore = arrayOf("INSTR1", "INSTR2", "INSTR3", "INSTR4", "INSTR5", "INSTR6")
 
-        if (incomeMessage.getField("SecurityID")!!.getString() !in security_ids_ignore) {
+        if (incomeMessage.getField("Instrument").getField("SecurityID")!!.getString() !in security_ids_ignore) {
             val fixNew = message("ExecutionReport")
                     .copyFields(
                             incomeMessage,
@@ -37,8 +37,6 @@ class NOSRule(field: Map<String, Value>) : MessageCompareRule() {
                             "Price",
                             "CumQty",
                             "ClOrdID",
-                            "SecurityID",
-                            "SecurityIDSource",
                             "OrdType",
                             "OrderQty",
                             "TradingParty",
@@ -54,6 +52,8 @@ class NOSRule(field: Map<String, Value>) : MessageCompareRule() {
                             "ExecType", "0",
                             "OrdStatus", "0",
                             "CumQty", "0"
+                            "SecurityID": incomeMessage.getField("Instrument").getField("SecurityID"),
+                            "SecurityIDSource": incomeMessage.getField("Instrument").getField("SecurityIDSource"),
                     )
 
             orders[orderID.toString()] = fixNew.copy()
