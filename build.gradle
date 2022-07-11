@@ -1,6 +1,5 @@
 buildscript {
     repositories {
-        mavenLocal()
         maven {
             name 'Sonatype_snapshots'
             url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
