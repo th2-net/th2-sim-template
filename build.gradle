@@ -55,8 +55,8 @@ repositories {
 dependencies {
     api platform('com.exactpro.th2:bom:3.0.0')
 
-    implementation "com.exactpro.th2:sim:3.9.0"
-    implementation "com.exactpro.th2:common:3.31.1"
+    implementation "com.exactpro.th2:sim:5.2.1-TH2-3876-build-2608737249-SNAPSHOT"
+    implementation "com.exactpro.th2:common:3.38.0-TH2-3789-2549112988-SNAPSHOT"
     api "com.exactpro.th2:grpc-sim-template:3.1.2"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
@@ -68,8 +68,8 @@ dependencies {
 
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
-    testImplementation testFixtures("com.exactpro.th2:sim:3.9.0")
-    testImplementation testFixtures("com.exactpro.th2:common:3.31.1")
+    testImplementation testFixtures("com.exactpro.th2:sim:5.2.1-TH2-3876-build-2608737249-SNAPSHOT")
+    testImplementation testFixtures("com.exactpro.th2:common:3.38.0-TH2-3789-2549112988-SNAPSHOT")
 }
 
 sourceSets {
