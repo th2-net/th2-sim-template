@@ -58,8 +58,8 @@ class NOSRule(field: Map<String, Value>) : MessageCompareRule() {
                             "SecurityIDSource", instrument.getField("SecurityIDSource")!!
                     )
 
-            orders[orderID.toString()] = fixNew.copy()
-            println(orders.keys.toString() + " added " + orderID + ". Total:" + orders.size)
+//             orders[orderID.toString()] = fixNew.copy()
+//             println(orders.keys.toString() + " added " + orderID + ". Total:" + orders.size)
             ruleContext.send(fixNew.build())
         }
     }
