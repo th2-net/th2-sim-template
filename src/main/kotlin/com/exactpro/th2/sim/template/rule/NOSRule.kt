@@ -37,10 +37,8 @@ class NOSRule(field: Map<String, Value>) : MessageCompareRule() {
                             incomeMessage,
                             "Side",
                             "Price",
-                            "CumQty",
                             "ClOrdID",
                             "OrdType",
-                            "TradingParty",
                             "TimeInForce",
                             "OrderCapacity",
                             "AccountType"
@@ -52,9 +50,7 @@ class NOSRule(field: Map<String, Value>) : MessageCompareRule() {
                             "Text", "Simulated order is placed",
                             "ExecType", "0",
                             "OrdStatus", "0",
-                            "CumQty", "0",
-                            "SecurityID", instrument.getField("SecurityID")!!,
-                            "SecurityIDSource", instrument.getField("SecurityIDSource")!!
+                            "CumQty", "0"
                     )
 
 //             orders[orderID.toString()] = fixNew.copy()
