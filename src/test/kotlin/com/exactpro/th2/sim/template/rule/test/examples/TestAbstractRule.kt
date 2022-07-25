@@ -15,14 +15,18 @@ class TestAbstractRule {
     fun `simple triggered test`() {
         testRule {
             val rule = TemplateAbstractRule()
-            rule.assertTriggered(/* test input message */ message("NewOrderSingle").apply {
+            val testMsg = message("NewOrderSingle").apply {
                 addFields("field1", 45, "field2", 45, "field3", "field3 test value")
-            }.build())
-            assertSent(/* expected output message */ message("ExecutionReport").addFields(
-                "field1", 45,
-                "field3", "field3 test value",
-                "field4", "value"
-            ).build())
+            }.build()
+            val testOutput = message("ExecutionReport").addFields(
+                    "field1", 45,
+                    "field3", "field3 test value",
+                    "field4", "value"
+            ).build()
+            rule.assertHandle(testMsg)
+            assertSent(Message::class.java) {
+                Assertions.assertEquals("ExecutionReport", it.messageType)
+            }
         }
     }
 
@@ -43,7 +47,7 @@ class TestAbstractRule {
     fun `custom triggered  test`() {
         testRule {
             val rule = TemplateAbstractRule()
-            rule.assertTriggered(/* test input message */ message("NewOrderSingle").apply {
+            rule.assertHandle(/* test input message */ message("NewOrderSingle").apply {
                 addFields("field1", 45, "field2", 45, "field3", "field3 test value")
             }.build())
             assertSent(Message::class.java) { actual:  Message ->
