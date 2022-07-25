@@ -49,6 +49,7 @@ class NOSRule(field: Map<String, Value>) : MessageCompareRule() {
                             "TransactTime", LocalDateTime.now(),
                             "OrderID", orderID.incrementAndGet(),
                             "ExecID", execID.incrementAndGet(),
+                            "OrderQty", incomeMessage.getField("OrderQty")!!,
                             "LeavesQty", incomeMessage.getField("OrderQty")!!,
                             "Text", "Simulated order is placed",
                             "ExecType", "0",
