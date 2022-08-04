@@ -300,7 +300,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val repeating2 = message().addFields("NoPartyIDs", listOf(
                                     message().addFields(
                                             "PartyRole", "76",
-                                            "PartyID", "DEMO-CONN2",
+                                            "PartyID", "DIRTY-CONN2",
                                             "PartyIDSource", "D"
                                     ),
                                     message().addFields(
@@ -761,7 +761,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val repeating2 = message().addFields("NoPartyIDs", listOf(
                                     message().addFields(
                                             "PartyRole", "76",
-                                            "PartyID", "DEMO-CONN2",
+                                            "PartyID", "DIRTY-CONN2",
                                             "PartyIDSource", "D"
                                     ),
                                     message().addFields(
@@ -1205,7 +1205,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val repeating2 = message().addFields("NoPartyIDs", listOf(
                                     message().addFields(
                                             "PartyRole", "76",
-                                            "PartyID", "DEMO-CONN2",
+                                            "PartyID", "DIRTY-CONN2",
                                             "PartyIDSource", "D"
                                     ),
                                     message().addFields(
