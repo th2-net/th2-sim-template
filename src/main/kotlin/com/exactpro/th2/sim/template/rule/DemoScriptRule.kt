@@ -268,7 +268,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                 "NoPartyIDs", listOf(
                                     message().addFields(
                                         "PartyRole", "76",
-                                        "PartyID", "DEMO-CONN1",
+                                        "PartyID", "DIRTY-CONN1",
                                         "PartyIDSource", "D"
                                     ),
                                     message().addFields(
@@ -453,7 +453,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                 "NoPartyIDs", listOf(
                                     message().addFields(
                                         "PartyRole", "76",
-                                        "PartyID", "DEMO-CONN2",
+                                        "PartyID", "DIRTY-CONN2",
                                         "PartyIDSource", "D"
                                     ),
                                     message().addFields(
@@ -793,7 +793,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                 "NoPartyIDs", listOf(
                                     message().addFields(
                                         "PartyRole", "76",
-                                        "PartyID", "DEMO-CONN1",
+                                        "PartyID", "DIRTY-CONN1",
                                         "PartyIDSource", "D"
                                     ),
                                     message().addFields(
@@ -978,7 +978,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                 "NoPartyIDs", listOf(
                                     message().addFields(
                                         "PartyRole", "76",
-                                        "PartyID", "DEMO-CONN2",
+                                        "PartyID", "DIRTY-CONN2",
                                         "PartyIDSource", "D"
                                     ),
                                     message().addFields(
@@ -1317,7 +1317,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                 "NoPartyIDs", listOf(
                                     message().addFields(
                                         "PartyRole", "76",
-                                        "PartyID", "DEMO-CONN1",
+                                        "PartyID", "DIRTY-CONN1",
                                         "PartyIDSource", "D"
                                     ),
                                     message().addFields(
@@ -1514,7 +1514,7 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                 "NoPartyIDs", listOf(
                                     message().addFields(
                                         "PartyRole", "76",
-                                        "PartyID", "DEMO-CONN2",
+                                        "PartyID", "DIRTY-CONN2",
                                         "PartyIDSource", "D"
                                     ),
                                     message().addFields(
