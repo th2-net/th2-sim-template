@@ -163,6 +163,9 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
             context.send(rej.build())
         } else {
             val instrument = incomeMessage.getMessage("Instrument")!!
+            val securityID = instrument.getField("SecurityID")!!.getString()
+            val securityIDSource = instrument.getField("SecurityIDSource")!!.getString()
+
             when (instrument.getString("SecurityID")) {
                 "INSTR4" -> {  // Extra FIX ER
                     when (incomeMessage.getString("Side")) {
@@ -176,7 +179,6 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Price",
                                     "CumQty",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderQty",
                                     "TradingParty",
@@ -185,6 +187,8 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime,
                                     "OrderID", ordId1,
                                     "ExecID", execIdNew,
@@ -225,7 +229,6 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Price",
                                     "CumQty",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderQty",
                                     "TradingParty",
@@ -234,6 +237,8 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime,
                                     "OrderID", ordId1,
                                     "ExecID", execId.incrementAndGet(),
@@ -297,12 +302,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order2fix1 = message("ExecutionReport", Direction.FIRST, "fix-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -354,12 +360,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order2dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -385,12 +392,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order1fix1 = message("ExecutionReport", Direction.FIRST, "fix-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -414,12 +422,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order1dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -477,12 +486,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -506,12 +516,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -536,12 +547,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -565,12 +577,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -595,12 +608,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -626,13 +640,14 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "TradingParty",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime3,
                                     "ExecType", "C",
                                     "OrdStatus", "C",
@@ -653,13 +668,14 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "TradingParty",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime3,
                                     "ExecType", "C",
                                     "OrdStatus", "C",
@@ -688,7 +704,6 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Price",
                                     "CumQty",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderQty",
                                     "TradingParty",
@@ -697,6 +712,8 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime,
                                     "OrderID", ordId1,
                                     "ExecID", execIdNew,
@@ -737,7 +754,6 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Price",
                                     "CumQty",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderQty",
                                     "TradingParty",
@@ -746,6 +762,8 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime,
                                     "OrderID", ordId1,
                                     "ExecID", execId.incrementAndGet(),
@@ -809,12 +827,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order2fix1 = message("ExecutionReport", Direction.FIRST, "fix-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -866,12 +885,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order2dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -897,12 +917,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order1fix1 = message("ExecutionReport", Direction.FIRST, "fix-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -926,12 +947,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order1dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -989,12 +1011,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -1018,12 +1041,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -1048,10 +1072,11 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -1077,12 +1102,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -1108,13 +1134,14 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "TradingParty",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime3,
                                     "ExecType", "C",
                                     "OrdStatus", "C",
@@ -1135,13 +1162,14 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "TradingParty",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime3,
                                     "ExecType", "C",
                                     "OrdStatus", "C",
@@ -1200,7 +1228,6 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Price",
                                     "CumQty",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderQty",
                                     "TradingParty",
@@ -1209,6 +1236,8 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime,
                                     "OrderID", ordId1,
                                     "ExecID", execIdNew,
@@ -1249,7 +1278,6 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Price",
                                     "CumQty",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderQty",
                                     "TradingParty",
@@ -1258,6 +1286,8 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime,
                                     "OrderID", ordId1,
                                     "ExecID", execId.incrementAndGet(),
@@ -1321,12 +1351,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order2fix1 = message("ExecutionReport", Direction.FIRST, "fix-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -1378,12 +1409,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order2dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -1409,12 +1441,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order1fix1 = message("ExecutionReport", Direction.FIRST, "fix-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -1450,12 +1483,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                             val trader1Order1dc1 = message("ExecutionReport", Direction.FIRST, "dc-demo-server1")
                                 .copyFields(
                                     incomeMessage,
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating1,
                                     "TimeInForce", "0",  // Get from message?
@@ -1513,12 +1547,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -1556,12 +1591,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime1,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -1586,12 +1622,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -1630,12 +1667,13 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime2,
                                     "TradingParty", repeating2,
                                     "ExecType", "F",
@@ -1661,13 +1699,14 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "TradingParty",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime3,
                                     "ExecType", "C",
                                     "OrdStatus", "C",
@@ -1688,13 +1727,14 @@ class DemoScriptRule(field: Map<String, Value>) : MessageCompareRule() {
                                     "Side",
                                     "Price",
                                     "ClOrdID",
-                                    "Instrument",
                                     "OrdType",
                                     "TradingParty",
                                     "OrderCapacity",
                                     "AccountType"
                                 )
                                 .addFields(
+                                    "SecurityID", securityID,
+                                    "SecurityIDSource", securityIDSource,
                                     "TransactTime", transTime3,
                                     "ExecType", "C",
                                     "OrdStatus", "C",
