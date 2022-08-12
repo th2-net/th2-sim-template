@@ -55,7 +55,7 @@ repositories {
 dependencies {
     api platform('com.exactpro.th2:bom:3.0.0')
 
-    implementation "com.exactpro.th2:sim:5.2.0"
+    implementation "com.exactpro.th2:sim:3.9.0"
     implementation "com.exactpro.th2:common:3.31.1"
     api "com.exactpro.th2:grpc-sim-template:3.1.2-demo-2574232653-SNAPSHOT"
 
