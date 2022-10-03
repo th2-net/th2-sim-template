@@ -80,7 +80,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "RefSeqNum", incomeMessage.getField("BeginString")?.getMessage()?.getField("MsgSeqNum"),
                     "Text", "Simulating reject message",
                     "SessionRejectReason", "1"
-                ).build()
+                ).buildWith { sessionAlias = incomeMessage.sessionAlias }
             )
             return
         }
@@ -96,7 +96,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "Text", "Unknown SecurityID",
                     "BusinessRejectReason", "2",
                     "BusinessRejectRefID", incomeMessage.getField("ClOrdID")
-                ).build()
+                ).buildWith { sessionAlias = incomeMessage.sessionAlias }
             )
             return
         }
@@ -127,7 +127,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "CumQty", "0"
                 )
 
-            context.send(fixNew.copy().addField("ExecID", execId.incrementAndGet()).build())
+            context.send(fixNew.copy().addField("ExecID", execId.incrementAndGet()).buildWith { sessionAlias = incomeMessage.sessionAlias })
             context.send(fixNew.copy().addField("ExecID", execId.incrementAndGet())
                 .buildWith { sessionAlias = "dc-demo-server1" })
 
