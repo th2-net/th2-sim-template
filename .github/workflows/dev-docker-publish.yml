@@ -67,5 +67,5 @@ jobs:
   uses: th2-net/.github/.github/workflows/trivy-scan-table.yml@main
   needs: [build]
   with:
-    image-path: ghcr.io/${{ github.repository }}:${{ needs.build-job.outputs.version }}
+    image-path: ghcr.io/${{ github.repository }}:${{ needs.build.outputs.version }}
     vuln-type: 'library'
