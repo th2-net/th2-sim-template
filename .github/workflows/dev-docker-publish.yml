@@ -63,9 +63,9 @@ jobs:
           labels: |
             com.exactpro.th2.${{ steps.meta.outputs.REPOSITORY_NAME }}=${{ steps.ver.outputs.value }}
             protobuf-description-base64=${{ steps.proto_json.outputs.DESCRIPTION_JSON }}
-    trivy-scan-job:
-    uses: th2-net/.github/.github/workflows/trivy-scan-table.yml@main
-    needs: [build]
-    with:
-      image-path: ghcr.io/${{ github.repository }}:${{ needs.build-job.outputs.version }}
-      vuln-type: 'library'
+  trivy-scan-job:
+  uses: th2-net/.github/.github/workflows/trivy-scan-table.yml@main
+  needs: [build]
+  with:
+    image-path: ghcr.io/${{ github.repository }}:${{ needs.build-job.outputs.version }}
+    vuln-type: 'library'
