@@ -18,6 +18,12 @@ plugins {
     id 'application'
     id 'com.palantir.docker' version '0.25.0'
     id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
+    id "org.owasp.dependencycheck" version "7.3.0"
+}
+
+dependencyCheck {
+    format='HTML'
+    failBuildOnCVSS=5
 }
 
 apply plugin: 'th2plugin'
@@ -53,7 +59,7 @@ repositories {
 }
 
 dependencies {
-    api platform('com.exactpro.th2:bom:3.2.0')
+    api platform('com.exactpro.th2:bom:4.0.2')
 
     implementation "com.exactpro.th2:sim:$sim_version"
     implementation "com.exactpro.th2:common:$common_version"
@@ -67,7 +73,7 @@ dependencies {
 
 
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
     testImplementation testFixtures("com.exactpro.th2:sim:$sim_version")
     testImplementation testFixtures("com.exactpro.th2:common:$common_version")
 }
