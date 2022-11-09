@@ -55,7 +55,7 @@ repositories {
 dependencies {
     api platform('com.exactpro.th2:bom:4.0.2')
 
-    implementation "com.exactpro.th2:sim:5.2.3-any_message_event_id_fix-3429363336-SNAPSHOT"
+    implementation "com.exactpro.th2:sim:5.2.3"
     implementation 'com.exactpro.th2:common:3.41.1'
     api "com.exactpro.th2:grpc-sim-template:3.1.2"
 
@@ -68,7 +68,7 @@ dependencies {
 
     testImplementation group: 'org.jetbrains.kotlin', name: 'kotlin-test-junit5', version: kotlin_version
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
-    testImplementation testFixtures("com.exactpro.th2:sim:5.2.3-any_message_event_id_fix-3429363336-SNAPSHOT")
+    testImplementation testFixtures("com.exactpro.th2:sim:5.2.3")
     testImplementation testFixtures("com.exactpro.th2:common:3.41.1")
 }
 
