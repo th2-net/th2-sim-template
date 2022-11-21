@@ -18,6 +18,7 @@ class NOSRule(field: Map<String, Value>) : MessageCompareRule() {
     companion object {
         private val orderID = AtomicInteger(0)
         private val execID = AtomicInteger(0)
+        val orders = hashMapOf<String, Message.Builder>()
     }
 
     init {
