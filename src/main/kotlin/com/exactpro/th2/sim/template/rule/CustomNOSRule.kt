@@ -26,32 +26,26 @@ class CustomNOSRule(field: Map<String, Value>, val property: String) : MessageCo
     }
 
     override fun handle(ruleContext: IRuleContext, incomeMessage: Message) {
-
-        val security_ids_ignore = arrayOf("INSTR1", "INSTR2", "INSTR3", "INSTR4", "INSTR5", "INSTR6")
-        val instrument = incomeMessage.getMessage("Instrument")!!
-
-        if (instrument.getField("SecurityID")!!.getString() !in security_ids_ignore) {
-            val fixNew = message("ExecutionReport")
-                    .copyFields(
-                            incomeMessage,
-                            "Side",
-                            "Price",
-                            "ClOrdID",
-                            "OrdType",
-                            "TimeInForce",
-                            "OrderCapacity",
-                            "AccountType"
-                    ).addFields(
-                            "TransactTime", LocalDateTime.now(),
-                            "OrderID", orderID.incrementAndGet(),
-                            "ExecID", execID.incrementAndGet(),
-                            "LeavesQty", incomeMessage.getField("OrderQty")!!,
-                            "Text", "$creationTime / $property",
-                            "ExecType", "0",
-                            "OrdStatus", "0",
-                            "CumQty", "0"
-                    )
-            ruleContext.send(fixNew.build())
-        }
+        val fixNew = message("ExecutionReport")
+                .copyFields(
+                        incomeMessage,
+                        "Side",
+                        "Price",
+                        "ClOrdID",
+                        "OrdType",
+                        "TimeInForce",
+                        "OrderCapacity",
+                        "AccountType"
+                ).addFields(
+                        "TransactTime", LocalDateTime.now(),
+                        "OrderID", orderID.incrementAndGet(),
+                        "ExecID", execID.incrementAndGet(),
+                        "LeavesQty", incomeMessage.getField("OrderQty")!!,
+                        "Text", "$creationTime / $property",
+                        "ExecType", "0",
+                        "OrdStatus", "0",
+                        "CumQty", "0"
+                )
+        ruleContext.send(fixNew.build())
     }
 }
