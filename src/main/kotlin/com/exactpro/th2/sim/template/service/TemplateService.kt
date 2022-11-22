@@ -58,5 +58,5 @@ class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
         ServiceUtils.addRule(DemoScriptRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
 
     override fun createCustomNOSRule(request: CustomNOSRuleCreate, responseObserver: StreamObserver<RuleID>?) =
-        ServiceUtils.addRule(CustomNOSRule(request.fieldsMap, request.property), request.connectionId.sessionAlias, simulator, responseObserver)
+        ServiceUtils.addRule(CustomNOSRule(request.fieldsMap, request.textSuffix1, request.textSuffix2), request.connectionId.sessionAlias, simulator, responseObserver)
 }
