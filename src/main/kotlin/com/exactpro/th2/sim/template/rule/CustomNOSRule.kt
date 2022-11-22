@@ -14,6 +14,8 @@ import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
 class CustomNOSRule(field: Map<String, Value>, val textSuffix1: String, val textSuffix2: String) : MessageCompareRule() {
+    private var innerTextSuffix1: String
+    private var innerTextSuffix2: String
 
     companion object {
         private val orderID = AtomicInteger(0)
@@ -23,6 +25,8 @@ class CustomNOSRule(field: Map<String, Value>, val textSuffix1: String, val text
 
     init {
         init("NewOrderSingle", field)
+        this.innerTextSuffix1 = textSuffix1
+        this.innerTextSuffix2 = textSuffix2
     }
 
     override fun handle(ruleContext: IRuleContext, incomeMessage: Message) {
@@ -47,5 +51,11 @@ class CustomNOSRule(field: Map<String, Value>, val textSuffix1: String, val text
                         "CumQty", "0"
                 )
         ruleContext.send(fixNew.build())
+    }
+
+    override fun touch(ruleContext: IRuleContext, args: MutableMap<String, String>) {
+        super.touch(ruleContext, args)
+        this.innerTextSuffix1 = args.getOrDefault("textSuffix1", this.innerTextSuffix1)
+        this.innerTextSuffix2 = args.getOrDefault("textSuffix2", this.innerTextSuffix2)
     }
 }
