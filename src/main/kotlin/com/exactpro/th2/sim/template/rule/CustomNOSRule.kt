@@ -13,7 +13,7 @@ import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
-class CustomNOSRule(field: Map<String, Value>, val parameter: String) : MessageCompareRule() {
+class CustomNOSRule(field: Map<String, Value>, val property: String) : MessageCompareRule() {
 
     companion object {
         private val orderID = AtomicInteger(0)
@@ -46,7 +46,7 @@ class CustomNOSRule(field: Map<String, Value>, val parameter: String) : MessageC
                             "OrderID", orderID.incrementAndGet(),
                             "ExecID", execID.incrementAndGet(),
                             "LeavesQty", incomeMessage.getField("OrderQty")!!,
-                            "Text", "$creationTime / $parameter",
+                            "Text", "$creationTime / $property",
                             "ExecType", "0",
                             "OrdStatus", "0",
                             "CumQty", "0"

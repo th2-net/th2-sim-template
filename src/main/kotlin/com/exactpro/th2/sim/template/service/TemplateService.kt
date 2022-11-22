@@ -20,12 +20,14 @@ import com.exactpro.th2.sim.ISimulatorPart
 import com.exactpro.th2.sim.grpc.RuleID
 import com.exactpro.th2.sim.template.grpc.SimTemplateGrpc
 import com.exactpro.th2.sim.template.grpc.TemplateFixRuleCreate
+import com.exactpro.th2.sim.template.grpc.CustomNOSRuleCreate
 import com.exactpro.th2.sim.template.rule.NOSRule
 import com.exactpro.th2.sim.template.rule.AmendRule
 import com.exactpro.th2.sim.template.rule.CancelRule
 import com.exactpro.th2.sim.template.rule.QuoteRule
 import com.exactpro.th2.sim.template.rule.SecurityRule
 import com.exactpro.th2.sim.template.rule.DemoScriptRule
+import com.exactpro.th2.sim.template.rule.CustomNOSRule
 import com.exactpro.th2.sim.util.ServiceUtils
 import io.grpc.stub.StreamObserver
 
@@ -54,4 +56,7 @@ class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
 
     override fun createDemoScriptRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
         ServiceUtils.addRule(DemoScriptRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+
+    override fun createCustomNOSRule(request: CustomNOSRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(CustomNOSRule(request.fieldsMap, request.property), request.connectionId.sessionAlias, simulator, responseObserver)
 }
