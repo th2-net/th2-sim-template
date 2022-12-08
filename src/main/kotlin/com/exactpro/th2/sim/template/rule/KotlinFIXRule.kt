@@ -113,12 +113,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
         for (field in listOf( "ClOrdID", "SecurityIDSource", "OrderQty", "OrdType", "Price" ,"SecurityID", "Side", "TimeInForce", "SecondaryClOrdID" , "OrderCapacity" , "AccountType")){
             toLog[field] = incomeMessage.getFieldsOrDefault(field, Value.newBuilder().setSimpleValue("").build())!!.getString()
         }
-        for (field in listOf("BodyLength", "MsgSeqNum")){
-            toLog[field] = incomeMessage.getField("header")!!.getMessage()?.getFieldsOrDefault(field, Value.newBuilder().setSimpleValue("").build())!!.getString()
-        }
-        toLog["SendingTime"] = timeFormatDirtyFix(incomeMessage.getField("header")!!.getMessage()?.getFieldsOrDefault("SendingTime", Value.newBuilder().setSimpleValue("").build())!!.getString())
         toLog["TransactTime"] = timeFormatDirtyFix(incomeMessage.getFieldsOrDefault("TransactTime", Value.newBuilder().setSimpleValue("").build())!!.getString())
-        toLog["CheckSum"] = incomeMessage.getField("trailer")!!.getMessage()?.getField("CheckSum")!!.getString()
         toLog["Sender"] = "DEMO-CONN"+incomeMessage.metadata.id.connectionId.sessionAlias.last()
         return toLog
     }
