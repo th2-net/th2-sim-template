@@ -37,6 +37,10 @@ import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
 class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
+    private val alias1 = "fix-demo-server1";
+    private val alias2 = "fix-demo-server2";
+    private val aliasdc1 = "dc-demo-server1";
+    private val aliasdc2 = "dc-demo-server2";
 
     companion object {
         private var orderId = AtomicInteger(0)
@@ -129,7 +133,9 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
 
             context.send(fixNew.copy().addField("ExecID", execId.incrementAndGet()).buildWith { sessionAlias = incomeMessage.sessionAlias })
             context.send(fixNew.copy().addField("ExecID", execId.incrementAndGet())
-                .buildWith { sessionAlias = "dc-demo-server1" })
+                .buildWith { sessionAlias = alias1 })
+            context.send(fixNew.copy().addField("ExecID", execId.incrementAndGet())
+                .buildWith { sessionAlias = aliasdc1 })
 
             return
         } else {
@@ -188,8 +194,8 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "TrdMatchID", tradeMatchID1
                 )
 
-            context.send(trader1Order2.copy().buildWith { sessionAlias = "fix-demo-server1" })
-            context.send(trader1Order2.copy().buildWith { sessionAlias = "dc-demo-server1" })
+            context.send(trader1Order2.copy().buildWith { sessionAlias = alias1 })
+            context.send(trader1Order2.copy().buildWith { sessionAlias = aliasdc1 })
 
             // ER FF Order1 for Trader1
             val trader1Order1 = trader1.copy()
@@ -203,8 +209,8 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "TrdMatchID", tradeMatchID2,
                 )
 
-            context.send(trader1Order1.copy().buildWith { sessionAlias = "fix-demo-server1" })
-            context.send(trader1Order1.copy().buildWith { sessionAlias = "dc-demo-server1" })
+            context.send(trader1Order1.copy().buildWith { sessionAlias = alias1 })
+            context.send(trader1Order1.copy().buildWith { sessionAlias = aliasdc1 })
 
             val trader2 = message("ExecutionReport").copyFields(
                 incomeMessage,
@@ -239,9 +245,9 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
             )
 
             // ER1 PF Order3 for Trader2
-            context.send(trader2Order3Er1.copy().buildWith { sessionAlias = "fix-demo-server2" })
+            context.send(trader2Order3Er1.copy().buildWith { sessionAlias = alias2 })
             //DropCopy
-            context.send(trader2Order3Er1.copy().buildWith { sessionAlias = "dc-demo-server2" })
+            context.send(trader2Order3Er1.copy().buildWith { sessionAlias = aliasdc2 })
 
             // ER2 PF Order3 for Trader2
             val trader2Order3Er2 = trader2Order3.copy().addFields(
@@ -254,7 +260,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
             )
 
             context.send(trader2Order3Er2.copy().buildWith {
-                sessionAlias = "fix-demo-server2"
+                sessionAlias = alias2
                 if (instrument == "INSTR5") {
                     addFields(
                         "Text", "Execution Report with incorrect value in OrdStatus tag",
@@ -264,7 +270,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                 }
             })
             //DropCopy
-            context.send(trader2Order3Er2.copy().buildWith { sessionAlias = "dc-demo-server2" })
+            context.send(trader2Order3Er2.copy().buildWith { sessionAlias = aliasdc2 })
 
             if (instrument == "INSTR4") {
                 // Extra ER3 FF Order3 for Trader2 as testcase
@@ -282,7 +288,7 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                         "TrdMatchID", tradeMatchID2,
                         "Text", "Extra Execution Report"
                     )
-                context.send(trader2Order3fixX.buildWith { sessionAlias = "fix-demo-server2" })
+                context.send(trader2Order3fixX.buildWith { sessionAlias = alias2 })
             }
             // ER3 CC Order3 for Trader2
             val trader2Order3Er3CC = trader2.copy()
@@ -297,9 +303,9 @@ class KotlinFIXRule(field: Map<String, Value>) : MessageCompareRule() {
                     "ExecID", execId.incrementAndGet(),
                     "Text", "The remaining part of simulated order has been expired"
                 )
-            context.send(trader2Order3Er3CC.copy().buildWith { sessionAlias = "fix-demo-server2" })
+            context.send(trader2Order3Er3CC.copy().buildWith { sessionAlias = alias2 })
             //DropCopy
-            context.send(trader2Order3Er3CC.copy().buildWith { sessionAlias = "dc-demo-server2" })
+            context.send(trader2Order3Er3CC.copy().buildWith { sessionAlias = aliasdc2 })
         }
     }
 
