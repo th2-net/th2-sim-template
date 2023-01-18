@@ -18,6 +18,7 @@ plugins {
     id 'application'
     id 'com.palantir.docker' version '0.25.0'
     id 'org.jetbrains.kotlin.jvm' version '1.5.10'
+    id "org.owasp.dependencycheck" version "7.4.4"
 }
 
 apply plugin: 'th2plugin'
@@ -128,3 +129,7 @@ docker {
 
 sourceCompatibility = 11
 targetCompatibility = 11
+
+dependencyCheck {
+    formats=['SARIF']
+}
