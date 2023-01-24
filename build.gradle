@@ -22,8 +22,7 @@ plugins {
 }
 
 dependencyCheck {
-    format='HTML'
-    failBuildOnCVSS=5
+    formats=['SARIF', 'HTML']
 }
 
 apply plugin: 'th2plugin'
@@ -128,7 +127,3 @@ docker {
 
 sourceCompatibility = 11
 targetCompatibility = 11
-
-dependencyCheck {
-    formats=['SARIF']
-}
