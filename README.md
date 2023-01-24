@@ -56,6 +56,15 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 + Migration to books/pages cradle 4.0.0
   + Update `common-j` to 4.0.0
 
+### 3.7.0
++ Update th2-common to version 3.44.0
++ Update bom to version 4.1.0
+
+### 3.6.0
++ Updated th2-sim to version 5.2.3
++ Update th2-common to version 3.41.1
++ Update bom to version 4.0.2
+
 ### 3.5.1 
 + Add tests examples
 

@@ -7,6 +7,7 @@ on:
       - version-*
     paths:
       - gradle.properties
+#    - package_info.json  
 
 jobs:
   build:
@@ -50,3 +51,6 @@ jobs:
           labels: |
             com.exactpro.th2.${{ steps.meta.outputs.REPOSITORY_NAME }}=${{ steps.read_property.outputs.value }}
             protobuf-description-base64=${{ steps.proto_json.outputs.DESCRIPTION_JSON }}
+  owasp-scan:
+    uses: th2-net/.github/.github/workflows/owasp-gradle-scan.yml@main
+
