@@ -50,15 +50,10 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ## Release notes
 
-### 4.0.0
-+ Update `kotlin.jvm` to `1.5.31`  
-+ Added `kotlin_version`, `sim_version` and `common_version` to `gradle.properties`
-+ Migration to books/pages cradle 4.0.0
-  + Update `common-j` to 4.0.0
-
 ### 3.7.0
 + Update th2-common to version 3.44.0
 + Update bom to version 4.1.0
++ Update `kotlin.jvm` to `1.6.21`
 
 ### 3.6.0
 + Updated th2-sim to version 5.2.3
