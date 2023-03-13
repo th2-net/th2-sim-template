@@ -16,7 +16,7 @@ plugins {
     id 'java-test-fixtures'
     id 'maven-publish'
     id 'application'
-    id 'com.palantir.docker' version '0.25.0'
+    id 'com.palantir.docker' version '0.34.0'
     id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
     id "org.owasp.dependencycheck" version "8.1.2"
 }
