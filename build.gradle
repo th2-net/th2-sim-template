@@ -18,11 +18,18 @@ plugins {
     id 'application'
     id 'com.palantir.docker' version '0.25.0'
     id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
-    id "org.owasp.dependencycheck" version "7.4.4"
+    id "org.owasp.dependencycheck" version "8.1.2"
 }
 
 dependencyCheck {
-    formats=['SARIF', 'HTML']
+    formats=['SARIF', 'JSON', 'HTML']
+    failBuildOnCVSS=5
+
+    analyzers {
+        assemblyEnabled = false
+        nugetconfEnabled = false
+        nodeEnabled = false
+    }
 }
 
 apply plugin: 'th2plugin'
@@ -58,7 +65,7 @@ repositories {
 }
 
 dependencies {
-    api platform('com.exactpro.th2:bom:4.1.0')
+    api platform('com.exactpro.th2:bom:4.2.0')
 
     implementation "com.exactpro.th2:sim:$sim_version"
     implementation "com.exactpro.th2:common:$common_version"

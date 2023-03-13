@@ -50,6 +50,10 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ## Release notes
 
+### 4.0.0
+
++ books and pages concept support
+
 ### 3.7.0
 + Update th2-common to version 3.44.0
 + Update bom to version 4.1.0
