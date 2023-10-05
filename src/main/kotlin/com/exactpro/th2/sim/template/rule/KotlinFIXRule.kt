@@ -110,7 +110,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     "CumQty",
                     "ClOrdID",
                     "SecurityID",
-                    "SecurityIDincomeMessage",
+                    "SecurityIDSource",
                     "OrdType",
                     "OrderQty",
                     "TradingParty",
@@ -166,7 +166,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                 .copyFields(
                     incomeMessage,
                     "SecurityID",
-                    "SecurityIDincomeMessage",
+                    "SecurityIDSource",
                     "OrdType",
                     "OrderCapacity",
                     "AccountType"
@@ -219,7 +219,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                 "Price",
                 "ClOrdID",
                 "SecurityID",
-                "SecurityIDincomeMessage",
+                "SecurityIDSource",
                 "OrdType",
                 "OrderCapacity",
                 "AccountType"
