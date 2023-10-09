@@ -175,7 +175,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                         "NoPartyIDs" to createNoPartyIds("DEMO-CONN1", "DEMOFIRM2")
                     ),
                     "Side" to "1",
-                    "TimeInForce" to 0,  // Get from message?
+                    "TimeInForce" to "0",  // Get from message?
                     "ExecType" to "F",
                     "OrdStatus" to "2",
                     "LeavesQty" to 0,
