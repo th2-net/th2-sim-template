@@ -174,10 +174,10 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     "TradingParty" to hashMapOf(
                         "NoPartyIDs" to createNoPartyIds("DEMO-CONN1", "DEMOFIRM2")
                     ),
-                    "Side" to 1,
+                    "Side" to "1",
                     "TimeInForce" to 0,  // Get from message?
                     "ExecType" to "F",
-                    "OrdStatus" to 2,
+                    "OrdStatus" to "2",
                     "LeavesQty" to 0,
                     "Text" to "The simulated order has been fully traded"
                 ).build()
