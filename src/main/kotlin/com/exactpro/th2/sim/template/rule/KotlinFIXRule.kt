@@ -319,11 +319,11 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
         createParty("12", "3", "P")
     )
 
-    private fun createParty(partyRole: String, partyID: String, partyIDincomeMessage: String): Map<String, Any> =
+    private fun createParty(partyRole: String, partyID: String, partyIDSource: String): Map<String, Any> =
         hashMapOf(
             "PartyRole" to partyRole,
             "PartyID" to partyID,
-            "PartyIDincomeMessage" to partyIDincomeMessage,
+            "PartyIDSource" to partyIDSource,
         )
 
     private fun ParsedMessage.FromMapBuilder.with(sessionAlias: String? = null): ParsedMessage.FromMapBuilder = apply {
