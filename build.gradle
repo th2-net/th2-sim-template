@@ -97,15 +97,8 @@ docker {
     copySpec.from(tarTree("$buildDir/distributions/${applicationName}.tar"))
 }
 
-sourceCompatibility = 11
-targetCompatibility = 11
-
-compileKotlin {
-    kotlinOptions.jvmTarget = "11"
-}
-
-compileTestKotlin {
-    kotlinOptions.jvmTarget = "11"
+kotlin {
+    jvmToolchain(11)
 }
 
 licenseReport {

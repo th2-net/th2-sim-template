@@ -29,7 +29,7 @@ class TemplatePredicateRule : MessagePredicateRule() {
                 "field" to Predicate { value ->
                     requireNotNull(value) {
                         "The 'field' value is null"
-                    }.toString().toInt()!! > 0
+                    }.toString().toInt() > 0
                 },
                 "field2" to Predicate { value -> value?.toString()?.matches(Regex("A*")) ?: false },
                 "field3" to Predicate { value ->
