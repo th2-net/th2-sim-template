@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+/*
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,7 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ */
+
 package com.exactpro.th2.sim.template.service
 
 import com.exactpro.th2.sim.ISimulator
@@ -20,6 +21,7 @@ import com.exactpro.th2.sim.ISimulatorPart
 import com.exactpro.th2.sim.grpc.RuleID
 import com.exactpro.th2.sim.template.grpc.SimTemplateGrpc
 import com.exactpro.th2.sim.template.grpc.TemplateFixRuleCreate
+import com.exactpro.th2.sim.template.rule.DemoCancelRequestRule
 import com.exactpro.th2.sim.util.ServiceUtils
 import com.exactpro.th2.sim.template.rule.TemplateFixRule
 import com.exactpro.th2.sim.template.rule.KotlinFIXRule
@@ -42,4 +44,7 @@ class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
 
     override fun createRuleFixSecurity(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
         ServiceUtils.addRule(KotlinFIXRuleSecurity(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
-}
+
+    override fun createDemoRuleCancelReplace(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
+        ServiceUtils.addRule(DemoCancelRequestRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+    }

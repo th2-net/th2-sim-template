@@ -1,33 +1,44 @@
+/*
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.exactpro.th2.sim.template.rule.test.examples
 
-import com.exactpro.th2.common.assertInt
-import com.exactpro.th2.common.assertString
-import com.exactpro.th2.common.grpc.Message
-import com.exactpro.th2.common.message.addField
-import com.exactpro.th2.common.message.addFields
-import com.exactpro.th2.common.message.message
-import com.exactpro.th2.common.message.messageType
-import com.exactpro.th2.common.value.toValue
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
+import com.exactpro.th2.common.utils.message.transport.addFields
+import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.template.rule.KotlinFIXRule
 import com.exactpro.th2.sim.template.rule.test.api.TestRuleContext.Companion.testRule
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 
 class FixRuleTest {
 
     @Test
     fun `negative test`() {
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true".toValue()))
+            val rule = KotlinFIXRule(mapOf("check" to "true"))
 
             // wrong type of message test
-            rule.assertNotTriggered(message("WrongOrder").apply {
+            rule.assertNotTriggered(message("WrongOrder") {
                 addField("check", "true")
             }.build())
             assertNothingSent()
 
             // wrong fields test
-            rule.assertNotTriggered(message("NewOrderSingle").apply {
+            rule.assertNotTriggered(message("NewOrderSingle") {
                 addField("check", "false")
             }.build())
             assertNothingSent()
@@ -37,14 +48,14 @@ class FixRuleTest {
     @Test
     fun `positive rejected test`() {
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true".toValue()))
+            val rule = KotlinFIXRule(mapOf("check" to "true"))
 
             // correct type and field check buy without side field
             rule.assertHandle(message("NewOrderSingle").apply {
                 addField("check", "true")
             }.build())
-            assertSent(Message::class.java) {
-                Assertions.assertEquals("Reject", it.messageType)
+            assertSent(ParsedMessage.FromMapBuilder::class.java) {
+                Assertions.assertEquals("Reject", it.type)
             }
             assertNothingSent()
         }
@@ -55,7 +66,7 @@ class FixRuleTest {
         KotlinFIXRule.reset()
         // test to check response of message with field SecurityID = INSTR4 and side = 1/2
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true".toValue()))
+            val rule = KotlinFIXRule(mapOf("check" to "true"))
 
             rule.assertHandle(message("NewOrderSingle").apply {
                 addField("check", "true")
@@ -66,34 +77,34 @@ class FixRuleTest {
                 addField("Price", "Price value")
             }.build())
 
-            assertSent(Message::class.java) { message ->
-                Assertions.assertEquals("ExecutionReport", message.messageType)
-                message.assertInt("OrderID", 1)
-                message.assertInt("ExecID", 1)
+            assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                Assertions.assertEquals("ExecutionReport", message.type)
+                assertEquals(1, message.bodyBuilder()["OrderID"])
+                assertEquals(1, message.bodyBuilder()["ExecID"])
             }
 
-            assertSent(Message::class.java) { message ->
-                Assertions.assertEquals("ExecutionReport", message.messageType)
-                message.assertInt("OrderID", 1)
-                message.assertInt("ExecID", 2)
+            assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                Assertions.assertEquals("ExecutionReport", message.type)
+                assertEquals(1, message.bodyBuilder()["OrderID"])
+                assertEquals(2, message.bodyBuilder()["ExecID"])
             }
 
             assertNothingSent()
 
             rule.assertHandle(message("NewOrderSingle").apply {
-                addField("check", "true")
-                addFields("Side", "2")
                 addFields(
-                    "SecurityID", "INSTR4",
-                    "OrderQty", 123,
-                    "ClOrdID", "ClOrdID value",
-                    "Price", "Price value",
+                    "check" to "true",
+                    "Side" to "2",
+                    "SecurityID" to "INSTR4",
+                    "OrderQty" to 123,
+                    "ClOrdID" to "ClOrdID value",
+                    "Price" to "Price value",
                 )
             }.build())
 
             for (i in 0..10) {
-                assertSent(Message::class.java) { message ->
-                    Assertions.assertEquals("ExecutionReport", message.messageType) { "Execution report with index: $i" }
+                assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                    Assertions.assertEquals("ExecutionReport", message.type) { "Execution report with index: $i" }
                 }
             }
 
@@ -106,47 +117,47 @@ class FixRuleTest {
         KotlinFIXRule.reset()
         // test to check response of message with field SecurityID = INSTR5 and side = 1/2
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true".toValue()))
+            val rule = KotlinFIXRule(mapOf("check" to "true"))
 
-            rule.assertHandle(message("NewOrderSingle").apply {
-                addField("check", "true")
-                addFields("Side", "1")
+            rule.assertHandle(message("NewOrderSingle") {
                 addFields(
-                    "SecurityID", "INSTR5",
-                    "OrderQty", 123,
-                    "ClOrdID", "ClOrdID value",
-                    "Price", "Price value",
+                    "check" to "true",
+                    "Side" to "1",
+                    "SecurityID" to "INSTR5",
+                    "OrderQty" to 123,
+                    "ClOrdID" to "ClOrdID value",
+                    "Price" to "Price value",
                 )
             }.build())
 
-            assertSent(Message::class.java) { message ->
-                Assertions.assertEquals("ExecutionReport", message.messageType)
-                message.assertInt("OrderID", 1)
-                message.assertInt("ExecID", 1)
+            assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                Assertions.assertEquals("ExecutionReport", message.type)
+                assertEquals(1, message.bodyBuilder()["OrderID"])
+                assertEquals(1, message.bodyBuilder()["ExecID"])
             }
 
-            assertSent(Message::class.java) { message ->
-                Assertions.assertEquals("ExecutionReport", message.messageType)
-                message.assertInt("OrderID", 1)
-                message.assertInt("ExecID", 2)
+            assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                Assertions.assertEquals("ExecutionReport", message.type)
+                assertEquals(1, message.bodyBuilder()["OrderID"])
+                assertEquals(2, message.bodyBuilder()["ExecID"])
             }
 
             assertNothingSent()
 
-            rule.assertHandle(message("NewOrderSingle").apply {
-                addField("check", "true")
-                addFields("Side", "2")
+            rule.assertHandle(message("NewOrderSingle") {
                 addFields(
-                    "SecurityID", "INSTR5",
-                    "OrderQty", 123,
-                    "ClOrdID", "ClOrdID value",
-                    "Price", "Price value",
+                    "check" to "true",
+                    "Side" to "2",
+                    "SecurityID" to "INSTR5",
+                    "OrderQty" to 123,
+                    "ClOrdID" to "ClOrdID value",
+                    "Price" to "Price value",
                 )
             }.build())
 
             for (i in 0..9) {
-                assertSent(Message::class.java) { message ->
-                    Assertions.assertEquals("ExecutionReport", message.messageType) { "Execution report with index: $i" }
+                assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                    Assertions.assertEquals("ExecutionReport", message.type) { "Execution report with index: $i" }
                 }
             }
 
@@ -159,27 +170,27 @@ class FixRuleTest {
         KotlinFIXRule.reset()
         // test to check response of message with field SecurityID = INSTR6
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true".toValue()))
+            val rule = KotlinFIXRule(mapOf("check" to "true"))
 
-            rule.assertHandle(message("NewOrderSingle").apply {
-                addField("check", "true")
-                addFields("Side", "2")
+            rule.assertHandle(message("NewOrderSingle") {
                 addFields(
-                    "SecurityID", "INSTR6",
-                    "OrderQty", 123,
-                    "ClOrdID", "ClOrdID value",
-                    "Price", "Price value",
-                    "BeginString", "BeginString value"
+                    "check" to "true",
+                    "Side" to "2",
+                    "SecurityID" to "INSTR6",
+                    "OrderQty" to 123,
+                    "ClOrdID" to "ClOrdID value",
+                    "Price" to "Price value",
+                    "BeginString" to "BeginString value",
+                    "header" to hashMapOf(
+                        "MsgSeqNum" to 123
+                    )
                 )
-                addField("header", message().apply {
-                    addField("MsgSeqNum", 123)
-                })
             }.build())
 
-            assertSent(Message::class.java) { message ->
-                Assertions.assertEquals("BusinessMessageReject", message.messageType)
-                message.assertString("BusinessRejectRefID",  "ClOrdID value")
-                message.assertInt("RefSeqNum", 123)
+            assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                Assertions.assertEquals("BusinessMessageReject", message.type)
+                assertEquals("ClOrdID value", message.bodyBuilder()["BusinessRejectRefID"])
+                assertEquals(123, message.bodyBuilder()["RefSeqNum"])
             }
 
         }
