@@ -50,7 +50,7 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ## Release notes
 
-### 4.0.0
+### 4.0.1
 
 + JDK downgrade to v11
 
