@@ -37,12 +37,12 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
     private val aliasdc2 = "dc-demo-server2"
 
     companion object {
-        private var orderId = AtomicInteger(0)
-        private var execId = AtomicInteger(0)
-        private var TrdMatchId = AtomicInteger(0)
+        private val orderId = AtomicInteger(0)
+        private val execId = AtomicInteger(0)
+        private val TrdMatchId = AtomicInteger(0)
 
-        private var incomeMsgList = arrayListOf<ParsedMessage>()
-        private var ordIdList = arrayListOf<Int>()
+        private val incomeMsgList = arrayListOf<ParsedMessage>()
+        private val ordIdList = arrayListOf<Int>()
 
         fun reset() {
             orderId.set(0)
@@ -109,6 +109,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     "Price",
                     "CumQty",
                     "ClOrdID",
+                    "SecondaryClOrdID",
                     "SecurityID",
                     "SecurityIDSource",
                     "OrdType",
@@ -126,7 +127,6 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     "OrdStatus" to "0",
                     "CumQty" to "0"
                 ).build()
-
 
             context.send(
                 fixNew.toBuilder()
@@ -183,7 +183,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                 ).build()
 
             val trader1Order2 = trader1.toBuilder()
-                .copyFields(second, "ClOrdID", "OrderQty")
+                .copyFields(second, "ClOrdID", "SecondaryClOrdID", "OrderQty")
                 .addFields(
                     "TransactTime" to transTime1,
                     "CumQty" to cumQty1,
@@ -199,7 +199,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
 
             // ER FF Order1 for Trader1
             val trader1Order1 = trader1.toBuilder()
-                .copyFields(first, "ClOrdID", "OrderQty", "Price")
+                .copyFields(first, "ClOrdID", "SecondaryClOrdID", "OrderQty", "Price")
                 .addFields(
                     "TransactTime" to transTime2,
                     "CumQty" to cumQty2,
@@ -218,6 +218,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                 "Side",
                 "Price",
                 "ClOrdID",
+                "SecondaryClOrdID",
                 "SecurityID",
                 "SecurityIDSource",
                 "OrdType",

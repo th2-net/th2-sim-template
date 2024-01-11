@@ -47,7 +47,7 @@ class DemoCancelRequestRule(field: Map<String, Any?>) : MessagePredicateRule() {
             )
         } else {
             val builder = message("ExecutionReport")
-                .copyFields(incomeMessage, "ClOrdID", "Symbol", "Side", "TransactTime")
+                .copyFields(incomeMessage, "ClOrdID", "SecondaryClOrdID", "Symbol", "Side", "TransactTime")
 
             when (incomeMessage.getField("header", "MsgType")) {
                 "F" -> builder // OrderCancelRequest

@@ -48,6 +48,7 @@ class TemplateFixRule(field: Map<String, Any?>) : MessageCompareRule() {
                 "Side",
                 "LeavesQty",
                 "ClOrdID",
+                "SecondaryClOrdID",
                 "SecurityID",
                 "SecurityIDSource",
                 "OrdType",
