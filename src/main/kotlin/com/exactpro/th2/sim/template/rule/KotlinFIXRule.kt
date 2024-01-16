@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.time.LocalDateTime
+import java.util.Queue
+import java.util.LinkedList
 import java.util.concurrent.atomic.AtomicInteger
 
 class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
@@ -41,16 +43,13 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
         private val execId = AtomicInteger(0)
         private val TrdMatchId = AtomicInteger(0)
 
-        private val incomeMsgList = arrayListOf<ParsedMessage>()
-        private val ordIdList = arrayListOf<Int>()
+        private val buyOrdersAndIds: Queue<Pair<ParsedMessage, Int>> = LinkedList()
+        private val sellOrders: Queue<Pair<ParsedMessage, Int>> = LinkedList()
 
         fun reset() {
             orderId.set(0)
             execId.set(0)
             TrdMatchId.set(0)
-
-            incomeMsgList.clear()
-            ordIdList.clear()
         }
     }
 
@@ -59,17 +58,6 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
     }
 
     override fun handle(context: IRuleContext, incomeMessage: ParsedMessage) {
-        incomeMsgList.add(incomeMessage)
-        while (incomeMsgList.size > 3) {
-            incomeMsgList.removeAt(0)
-        }
-        val ordId1 = orderId.incrementAndGet()
-
-        ordIdList.add(ordId1)
-        while (ordIdList.size > 3) {
-            ordIdList.removeAt(0)
-        }
-
         if (!incomeMessage.containsField("Side")) {
             context.send(
                 message("Reject")
@@ -101,7 +89,9 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
             return
         }
 
+        val incomeOrderId = orderId.incrementAndGet()
         if (incomeMessage.getInt("Side") == 1) {
+            buyOrdersAndIds.add(incomeMessage to incomeOrderId)
             val fixNew = message("ExecutionReport")
                 .copyFields(
                     incomeMessage,
@@ -120,7 +110,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     "AccountType"
                 ).addFields(
                     "TransactTime" to LocalDateTime.now(),
-                    "OrderID" to ordId1,
+                    "OrderID" to incomeOrderId,
                     "LeavesQty" to incomeMessage.getField("OrderQty")!!,
                     "Text" to "Simulated New Order Buy is placed",
                     "ExecType" to "0",
@@ -138,178 +128,187 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     .addField("ExecID", execId.incrementAndGet())
                     .with(sessionAlias = aliasdc1)
             )
-            return
         } else {
-            // Useful variables for buy-side
-            val first = incomeMsgList[0]
-            val second = incomeMsgList[1]
+            sellOrders.add(incomeMessage to incomeOrderId)
+        }
 
-            val cumQty1 = second.getInt("OrderQty")!!
-            val cumQty2 = first.getInt("OrderQty")!!
-            val leavesQty2 = incomeMessage.getInt("OrderQty")!! - (cumQty1 + cumQty2)
-            val order1Price = first.getString("Price")!!
-            val order2Price = second.getString("Price")!!
+        if (buyOrdersAndIds.size < 2 || sellOrders.isEmpty()) {
+            // we don't have enough orders for matching
+            return
+        }
 
-            val tradeMatchID1 = TrdMatchId.incrementAndGet()
-            val tradeMatchID2 = TrdMatchId.incrementAndGet()
+        // Useful variables for buy-side
+        val (sellOrder, sellId) = sellOrders.remove()
+        val (firstBuyOrder, firstId) = buyOrdersAndIds.remove()
+        val (secondBuyOrder, secondId) = buyOrdersAndIds.remove()
 
-            // Generator ER
-            // ER FF Order2 for Trader1
-            val transTime1 = LocalDateTime.now()
-            val transTime2 = LocalDateTime.now()
+        val cumQty1 = secondBuyOrder.getInt("OrderQty")!!
+        val cumQty2 = firstBuyOrder.getInt("OrderQty")!!
+        val leavesQty2 = sellOrder.getInt("OrderQty")!! - (cumQty1 + cumQty2)
+        val order1Price = firstBuyOrder.getString("Price")!!
+        val order2Price = secondBuyOrder.getString("Price")!!
 
-            val noPartyIdsTrader2Order3 = hashMapOf(
-                "NoPartyIDs" to createNoPartyIds("DEMO-CONN2", "DEMOFIRM1")
-            )
+        val tradeMatchID1 = TrdMatchId.incrementAndGet()
+        val tradeMatchID2 = TrdMatchId.incrementAndGet()
 
-            val trader1 = message("ExecutionReport")
-                .copyFields(
-                    incomeMessage,
-                    "SecurityID",
-                    "SecurityIDSource",
-                    "OrdType",
-                    "OrderCapacity",
-                    "AccountType"
-                ).addFields(
-                    "TradingParty" to hashMapOf(
-                        "NoPartyIDs" to createNoPartyIds("DEMO-CONN1", "DEMOFIRM2")
-                    ),
-                    "Side" to "1",
-                    "TimeInForce" to "0",  // Get from message?
-                    "ExecType" to "F",
-                    "OrdStatus" to "2",
-                    "LeavesQty" to 0,
-                    "Text" to "The simulated order has been fully traded"
-                ).build()
+        // Generator ER
+        // ER FF Order2 for Trader1
+        val transTime1 = LocalDateTime.now()
+        val transTime2 = LocalDateTime.now()
 
-            val trader1Order2 = trader1.toBuilder()
-                .copyFields(second, "ClOrdID", "SecondaryClOrdID", "OrderQty")
-                .addFields(
-                    "TransactTime" to transTime1,
-                    "CumQty" to cumQty1,
-                    "Price" to order2Price,
-                    "LastPx" to order2Price,
-                    "OrderID" to ordIdList[1],
-                    "ExecID" to execId.incrementAndGet(),
-                    "TrdMatchID" to tradeMatchID1
-                ).build()
+        val noPartyIdsTrader2Order3 = hashMapOf(
+            "NoPartyIDs" to createNoPartyIds("DEMO-CONN2", "DEMOFIRM1")
+        )
 
-            context.send(trader1Order2.toBuilder().with(sessionAlias = alias1))
-            context.send(trader1Order2.toBuilder().with(sessionAlias = aliasdc1))
-
-            // ER FF Order1 for Trader1
-            val trader1Order1 = trader1.toBuilder()
-                .copyFields(first, "ClOrdID", "SecondaryClOrdID", "OrderQty", "Price")
-                .addFields(
-                    "TransactTime" to transTime2,
-                    "CumQty" to cumQty2,
-                    "LastPx" to first.getField("Price"),
-                    "OrderID" to ordIdList[0],
-                    "ExecID" to execId.incrementAndGet(),
-                    "TrdMatchID" to tradeMatchID2,
-                ).build()
-
-            context.send(trader1Order1.toBuilder().with(sessionAlias = alias1))
-            context.send(trader1Order1.toBuilder().with(sessionAlias = aliasdc1))
-
-            val trader2 = message("ExecutionReport").copyFields(
-                incomeMessage,
-                "TimeInForce",
-                "Side",
-                "Price",
-                "ClOrdID",
-                "SecondaryClOrdID",
+        val trader1 = message("ExecutionReport")
+            .copyFields(
+                sellOrder,
                 "SecurityID",
                 "SecurityIDSource",
                 "OrdType",
                 "OrderCapacity",
                 "AccountType"
             ).addFields(
-                "OrderID" to ordId1
+                "TradingParty" to hashMapOf(
+                    "NoPartyIDs" to createNoPartyIds("DEMO-CONN1", "DEMOFIRM2")
+                ),
+                "Side" to "1",
+                "TimeInForce" to "0",  // Get from message?
+                "ExecType" to "F",
+                "OrdStatus" to "2",
+                "LeavesQty" to 0,
+                "Text" to "The simulated order has been fully traded"
             ).build()
 
-            val trader2Order3 = trader2.toBuilder()
-                .addFields(
-                    "TradingParty" to noPartyIdsTrader2Order3,
-                    "ExecType" to "F",
-                    "OrdStatus" to "1",
-                    "OrderQty" to incomeMessage.getString("OrderQty")!!,
-                    "Text" to "The simulated order has been partially traded"
-                ).build()
+        val trader1Order2 = trader1.toBuilder()
+            .copyFields(secondBuyOrder, "ClOrdID", "SecondaryClOrdID", "OrderQty")
+            .addFields(
+                "TransactTime" to transTime1,
+                "CumQty" to cumQty1,
+                "Price" to order2Price,
+                "LastPx" to order2Price,
+                "OrderID" to secondId,
+                "ExecID" to execId.incrementAndGet(),
+                "TrdMatchID" to tradeMatchID1
+            ).build()
 
-            val trader2Order3Er1 = trader2Order3.toBuilder()
-                .addFields(
-                    "TransactTime" to transTime1,
-                    "LastPx" to order2Price,
-                    "CumQty" to cumQty1,
-                    "LeavesQty" to incomeMessage.getInt("OrderQty")!! - cumQty1,
-                    "ExecID" to execId.incrementAndGet(),
-                    "TrdMatchID" to tradeMatchID1,
-                ).build()
+        context.send(trader1Order2.toBuilder().with(sessionAlias = alias1))
+        context.send(trader1Order2.toBuilder().with(sessionAlias = aliasdc1))
 
-            // ER1 PF Order3 for Trader2
-            context.send(trader2Order3Er1.toBuilder().with(sessionAlias = alias2))
-            //DropCopy
-            context.send(trader2Order3Er1.toBuilder().with(sessionAlias = aliasdc2))
-
-            // ER2 PF Order3 for Trader2
-            val trader2Order3Er2 = trader2Order3.toBuilder().addFields(
+        // ER FF Order1 for Trader1
+        val trader1Order1 = trader1.toBuilder()
+            .copyFields(firstBuyOrder, "ClOrdID", "SecondaryClOrdID", "OrderQty", "Price")
+            .addFields(
                 "TransactTime" to transTime2,
-                "LastPx" to order1Price,
-                "CumQty" to cumQty1 + cumQty2,
-                "LeavesQty" to leavesQty2,
+                "CumQty" to cumQty2,
+                "LastPx" to firstBuyOrder.getField("Price"),
+                "OrderID" to firstId,
                 "ExecID" to execId.incrementAndGet(),
                 "TrdMatchID" to tradeMatchID2,
             ).build()
 
-            context.send(trader2Order3Er2.toBuilder().apply {
-                with(sessionAlias = alias2)
-                if (instrument == "INSTR5") {
-                    addFields(
-                        "Text" to "Execution Report with incorrect value in OrdStatus tag",
-                        "OrderCapacity" to "P",  // Incorrect value as testcase
-                        "AccountType" to "2"     // Incorrect value as testcase
-                    )
-                }
-            })
-            //DropCopy
-            context.send(trader2Order3Er2.toBuilder().with(sessionAlias = aliasdc2))
+        context.send(trader1Order1.toBuilder().with(sessionAlias = alias1))
+        context.send(trader1Order1.toBuilder().with(sessionAlias = aliasdc1))
 
-            if (instrument == "INSTR4") {
-                // Extra ER3 FF Order3 for Trader2 as testcase
-                val trader2Order3fixX = trader2.toBuilder()
-                    .addFields(
-                        "TransactTime" to transTime2,
-                        "TradingParty" to noPartyIdsTrader2Order3,
-                        "ExecType" to "F",
-                        "OrdStatus" to "2",
-                        "LastPx" to order1Price,
-                        "CumQty" to cumQty1 + cumQty2,
-                        "OrderQty" to incomeMessage.getString("OrderQty")!!,
-                        "LeavesQty" to leavesQty2,
-                        "ExecID" to execId.incrementAndGet(),
-                        "TrdMatchID" to tradeMatchID2,
-                        "Text" to "Extra Execution Report"
-                    )
-                context.send(trader2Order3fixX.with(sessionAlias = alias2))
+        val trader2 = message("ExecutionReport").copyFields(
+            sellOrder,
+            "TimeInForce",
+            "Side",
+            "Price",
+            "ClOrdID",
+            "SecondaryClOrdID",
+            "SecurityID",
+            "SecurityIDSource",
+            "OrdType",
+            "OrderCapacity",
+            "AccountType"
+        ).addFields(
+            "OrderID" to sellId
+        ).build()
+
+        val trader2Order3 = trader2.toBuilder()
+            .addFields(
+                "TradingParty" to noPartyIdsTrader2Order3,
+                "ExecType" to "F",
+                "OrdStatus" to "1",
+                "OrderQty" to sellOrder.getString("OrderQty")!!,
+                "Text" to "The simulated order has been partially traded"
+            ).build()
+
+        val trader2Order3Er1 = trader2Order3.toBuilder()
+            .addFields(
+                "TransactTime" to transTime1,
+                "LastPx" to order2Price,
+                "CumQty" to cumQty1,
+                "LeavesQty" to sellOrder.getInt("OrderQty")!! - cumQty1,
+                "ExecID" to execId.incrementAndGet(),
+                "TrdMatchID" to tradeMatchID1,
+            ).build()
+
+        // ER1 PF Order3 for Trader2
+        context.send(trader2Order3Er1.toBuilder().with(sessionAlias = alias2))
+        //DropCopy
+        context.send(trader2Order3Er1.toBuilder().with(sessionAlias = aliasdc2))
+
+        // ER2 PF Order3 for Trader2
+        val trader2Order3Er2 = trader2Order3.toBuilder().addFields(
+            "TransactTime" to transTime2,
+            "LastPx" to order1Price,
+            "CumQty" to cumQty1 + cumQty2,
+            "LeavesQty" to leavesQty2,
+            "ExecID" to execId.incrementAndGet(),
+            "TrdMatchID" to tradeMatchID2,
+        ).build()
+
+        context.send(trader2Order3Er2.toBuilder().apply {
+            with(sessionAlias = alias2)
+            if (instrument == "INSTR5") {
+                addFields(
+                    "Text" to "Execution Report with incorrect value in OrdStatus tag",
+                    "OrderCapacity" to "P",  // Incorrect value as testcase
+                    "AccountType" to "2"     // Incorrect value as testcase
+                )
             }
-            // ER3 CC Order3 for Trader2
-            val trader2Order3Er3CC = trader2.toBuilder()
-                .copyFields(incomeMessage, "TradingParty")
+        })
+
+        //DropCopy
+        context.send(trader2Order3Er2.toBuilder().with(sessionAlias = aliasdc2))
+
+        if (instrument == "INSTR4") {
+            // Extra ER3 FF Order3 for Trader2 as testcase
+            val trader2Order3fixX = trader2.toBuilder()
                 .addFields(
-                    "TransactTime" to LocalDateTime.now(),
-                    "ExecType" to "C",
-                    "OrdStatus" to "C",
+                    "TransactTime" to transTime2,
+                    "TradingParty" to noPartyIdsTrader2Order3,
+                    "ExecType" to "F",
+                    "OrdStatus" to "2",
+                    "LastPx" to order1Price,
                     "CumQty" to cumQty1 + cumQty2,
-                    "LeavesQty" to "0",
-                    "OrderQty" to incomeMessage.getString("OrderQty")!!,
+                    "OrderQty" to sellOrder.getString("OrderQty")!!,
+                    "LeavesQty" to leavesQty2,
                     "ExecID" to execId.incrementAndGet(),
-                    "Text" to "The remaining part of simulated order has been expired"
-                ).build()
-            context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = alias2))
-            //DropCopy
-            context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliasdc2))
+                    "TrdMatchID" to tradeMatchID2,
+                    "Text" to "Extra Execution Report"
+                )
+            context.send(trader2Order3fixX.with(sessionAlias = alias2))
         }
+
+        // ER3 CC Order3 for Trader2
+        val trader2Order3Er3CC = trader2.toBuilder()
+            .copyFields(sellOrder, "TradingParty")
+            .addFields(
+                "TransactTime" to LocalDateTime.now(),
+                "ExecType" to "C",
+                "OrdStatus" to "C",
+                "CumQty" to cumQty1 + cumQty2,
+                "LeavesQty" to "0",
+                "OrderQty" to sellOrder.getString("OrderQty")!!,
+                "ExecID" to execId.incrementAndGet(),
+                "Text" to "The remaining part of simulated order has been expired"
+            ).build()
+        context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = alias2))
+        //DropCopy
+        context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliasdc2))
     }
 
     private fun createNoPartyIds(connect: String, firm: String): List<Map<String, Any>> = listOf(

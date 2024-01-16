@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.th2.sim.template.rule.test.examples
 
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
@@ -68,28 +69,30 @@ class FixRuleTest {
         testRule {
             val rule = KotlinFIXRule(mapOf("check" to "true"))
 
-            rule.assertHandle(message("NewOrderSingle").apply {
-                addField("check", "true")
-                addField("Side", "1")
-                addField("SecurityID", "INSTR4")
-                addField("OrderQty", 123)
-                addField("ClOrdID", "ClOrdID value")
-                addField("Price", "Price value")
-            }.build())
+            for (i in 0..1) {
+                rule.assertHandle(message("NewOrderSingle").apply {
+                    addField("check", "true")
+                    addField("Side", "1")
+                    addField("SecurityID", "INSTR4")
+                    addField("OrderQty", 123)
+                    addField("ClOrdID", "ClOrdID value")
+                    addField("Price", "Price value")
+                }.build())
 
-            assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
-                Assertions.assertEquals("ExecutionReport", message.type)
-                assertEquals(1, message.bodyBuilder()["OrderID"])
-                assertEquals(1, message.bodyBuilder()["ExecID"])
+                assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                    Assertions.assertEquals("ExecutionReport", message.type)
+                    assertEquals(i + 1, message.bodyBuilder()["OrderID"])
+                    assertEquals(2 * i + 1, message.bodyBuilder()["ExecID"])
+                }
+
+                assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                    Assertions.assertEquals("ExecutionReport", message.type)
+                    assertEquals(i + 1, message.bodyBuilder()["OrderID"])
+                    assertEquals(2 * i + 2, message.bodyBuilder()["ExecID"])
+                }
+
+                assertNothingSent()
             }
-
-            assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
-                Assertions.assertEquals("ExecutionReport", message.type)
-                assertEquals(1, message.bodyBuilder()["OrderID"])
-                assertEquals(2, message.bodyBuilder()["ExecID"])
-            }
-
-            assertNothingSent()
 
             rule.assertHandle(message("NewOrderSingle").apply {
                 addFields(
@@ -119,30 +122,32 @@ class FixRuleTest {
         testRule {
             val rule = KotlinFIXRule(mapOf("check" to "true"))
 
-            rule.assertHandle(message("NewOrderSingle") {
-                addFields(
-                    "check" to "true",
-                    "Side" to "1",
-                    "SecurityID" to "INSTR5",
-                    "OrderQty" to 123,
-                    "ClOrdID" to "ClOrdID value",
-                    "Price" to "Price value",
-                )
-            }.build())
+            for (i in 0..1) {
+                rule.assertHandle(message("NewOrderSingle") {
+                    addFields(
+                        "check" to "true",
+                        "Side" to "1",
+                        "SecurityID" to "INSTR5",
+                        "OrderQty" to 123,
+                        "ClOrdID" to "ClOrdID value",
+                        "Price" to "Price value",
+                    )
+                }.build())
 
-            assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
-                Assertions.assertEquals("ExecutionReport", message.type)
-                assertEquals(1, message.bodyBuilder()["OrderID"])
-                assertEquals(1, message.bodyBuilder()["ExecID"])
+                assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                    Assertions.assertEquals("ExecutionReport", message.type)
+                    assertEquals(i + 1, message.bodyBuilder()["OrderID"])
+                    assertEquals(2 * i + 1, message.bodyBuilder()["ExecID"])
+                }
+
+                assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
+                    Assertions.assertEquals("ExecutionReport", message.type)
+                    assertEquals(i + 1, message.bodyBuilder()["OrderID"])
+                    assertEquals(2 * i + 2, message.bodyBuilder()["ExecID"])
+                }
+
+                assertNothingSent()
             }
-
-            assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
-                Assertions.assertEquals("ExecutionReport", message.type)
-                assertEquals(1, message.bodyBuilder()["OrderID"])
-                assertEquals(2, message.bodyBuilder()["ExecID"])
-            }
-
-            assertNothingSent()
 
             rule.assertHandle(message("NewOrderSingle") {
                 addFields(
