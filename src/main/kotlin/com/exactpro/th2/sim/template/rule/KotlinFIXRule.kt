@@ -44,15 +44,17 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
         private val TrdMatchId = AtomicInteger(0)
 
         private val buyOrdersAndIds: Queue<Pair<ParsedMessage, Int>> = LinkedList()
-        private val sellOrders: Queue<Pair<ParsedMessage, Int>> = LinkedList()
+        private val sellOrdersAndIds: Queue<Pair<ParsedMessage, Int>> = LinkedList()
 
         fun reset() {
             orderId.set(0)
             execId.set(0)
             TrdMatchId.set(0)
 
-            buyOrdersAndIds.clear()
-            sellOrders.clear()
+            synchronized(KotlinFIXRule::class.java) {
+                buyOrdersAndIds.clear()
+                sellOrdersAndIds.clear()
+            }
         }
     }
 
@@ -132,18 +134,22 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     .with(sessionAlias = aliasdc1)
             )
         } else {
-            sellOrders.add(incomeMessage to incomeOrderId)
+            sellOrdersAndIds.add(incomeMessage to incomeOrderId)
         }
 
-        if (buyOrdersAndIds.size < 2 || sellOrders.isEmpty()) {
-            // we don't have enough orders for matching
-            return
+        val (sellOrderAndId, buyOrderAndId1, buyOrderAndId2) = synchronized(KotlinFIXRule::class.java) {
+            if (buyOrdersAndIds.size < 2 || sellOrdersAndIds.isEmpty()) {
+                // we don't have enough orders for matching
+                return
+            }
+
+            // Useful variables for buy-side
+            Triple(sellOrdersAndIds.remove(), buyOrdersAndIds.remove(), buyOrdersAndIds.remove())
         }
 
-        // Useful variables for buy-side
-        val (sellOrder, sellId) = sellOrders.remove()
-        val (firstBuyOrder, firstId) = buyOrdersAndIds.remove()
-        val (secondBuyOrder, secondId) = buyOrdersAndIds.remove()
+        val (sellOrder, sellId) = sellOrderAndId
+        val (firstBuyOrder, firstId) = buyOrderAndId1
+        val (secondBuyOrder, secondId) = buyOrderAndId2
 
         val cumQty1 = secondBuyOrder.getInt("OrderQty")!!
         val cumQty2 = firstBuyOrder.getInt("OrderQty")!!
