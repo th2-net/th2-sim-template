@@ -50,6 +50,9 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
             orderId.set(0)
             execId.set(0)
             TrdMatchId.set(0)
+
+            buyOrdersAndIds.clear()
+            sellOrders.clear()
         }
     }
 
