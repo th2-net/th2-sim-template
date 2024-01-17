@@ -29,7 +29,7 @@ import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import java.time.LocalDateTime
 import java.util.Queue
-import java.util.LinkedList
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 
 class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
@@ -37,26 +37,27 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
     private val alias2 = "fix-demo-server2"
     private val aliasdc1 = "dc-demo-server1"
     private val aliasdc2 = "dc-demo-server2"
+    private val lock = Any()
+    private val buyOrdersAndIds: Queue<OrderWithId> = ConcurrentLinkedQueue()
+    private val sellOrdersAndIds: Queue<OrderWithId> = ConcurrentLinkedQueue()
 
     companion object {
         private val orderId = AtomicInteger(0)
         private val execId = AtomicInteger(0)
         private val TrdMatchId = AtomicInteger(0)
+    }
+    fun reset() {
+        orderId.set(0)
+        execId.set(0)
+        TrdMatchId.set(0)
 
-        private val buyOrdersAndIds: Queue<Pair<ParsedMessage, Int>> = LinkedList()
-        private val sellOrdersAndIds: Queue<Pair<ParsedMessage, Int>> = LinkedList()
-
-        fun reset() {
-            orderId.set(0)
-            execId.set(0)
-            TrdMatchId.set(0)
-
-            synchronized(KotlinFIXRule::class.java) {
-                buyOrdersAndIds.clear()
-                sellOrdersAndIds.clear()
-            }
+        synchronized(lock) {
+            buyOrdersAndIds.clear()
+            sellOrdersAndIds.clear()
         }
     }
+
+    private class OrderWithId(val orderMessage: ParsedMessage, val orderId: Int)
 
     init {
         init("NewOrderSingle", field)
@@ -96,7 +97,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
 
         val incomeOrderId = orderId.incrementAndGet()
         if (incomeMessage.getInt("Side") == 1) {
-            buyOrdersAndIds.add(incomeMessage to incomeOrderId)
+            buyOrdersAndIds.add(OrderWithId(incomeMessage, incomeOrderId))
             val fixNew = message("ExecutionReport")
                 .copyFields(
                     incomeMessage,
@@ -134,31 +135,33 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     .with(sessionAlias = aliasdc1)
             )
         } else {
-            sellOrdersAndIds.add(incomeMessage to incomeOrderId)
+            sellOrdersAndIds.add(OrderWithId(incomeMessage, incomeOrderId))
         }
 
-        val (sellOrderAndId, buyOrderAndId1, buyOrderAndId2) = synchronized(KotlinFIXRule::class.java) {
+        val sellOrder: OrderWithId
+        val firstBuyOrder: OrderWithId
+        val secondBuyOrder: OrderWithId
+
+        synchronized(lock) {
             if (buyOrdersAndIds.size < 2 || sellOrdersAndIds.isEmpty()) {
                 // we don't have enough orders for matching
                 return
             }
 
             // Useful variables for buy-side
-            Triple(sellOrdersAndIds.remove(), buyOrdersAndIds.remove(), buyOrdersAndIds.remove())
+            sellOrder = sellOrdersAndIds.remove()
+            firstBuyOrder = buyOrdersAndIds.remove()
+            secondBuyOrder = buyOrdersAndIds.remove()
         }
 
-        val (sellOrder, sellId) = sellOrderAndId
-        val (firstBuyOrder, firstId) = buyOrderAndId1
-        val (secondBuyOrder, secondId) = buyOrderAndId2
+        val cumQty1 = secondBuyOrder.orderMessage.getInt("OrderQty")!!
+        val cumQty2 = firstBuyOrder.orderMessage.getInt("OrderQty")!!
+        val leavesQty2 = sellOrder.orderMessage.getInt("OrderQty")!! - (cumQty1 + cumQty2)
+        val order1Price = firstBuyOrder.orderMessage.getString("Price")!!
+        val order2Price = secondBuyOrder.orderMessage.getString("Price")!!
 
-        val cumQty1 = secondBuyOrder.getInt("OrderQty")!!
-        val cumQty2 = firstBuyOrder.getInt("OrderQty")!!
-        val leavesQty2 = sellOrder.getInt("OrderQty")!! - (cumQty1 + cumQty2)
-        val order1Price = firstBuyOrder.getString("Price")!!
-        val order2Price = secondBuyOrder.getString("Price")!!
-
-        val tradeMatchID1 = TrdMatchId.incrementAndGet()
-        val tradeMatchID2 = TrdMatchId.incrementAndGet()
+        val tradeMatchId1 = TrdMatchId.incrementAndGet()
+        val tradeMatchId2 = TrdMatchId.incrementAndGet()
 
         // Generator ER
         // ER FF Order2 for Trader1
@@ -171,7 +174,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
 
         val trader1 = message("ExecutionReport")
             .copyFields(
-                sellOrder,
+                sellOrder.orderMessage,
                 "SecurityID",
                 "SecurityIDSource",
                 "OrdType",
@@ -190,15 +193,15 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
             ).build()
 
         val trader1Order2 = trader1.toBuilder()
-            .copyFields(secondBuyOrder, "ClOrdID", "SecondaryClOrdID", "OrderQty")
+            .copyFields(secondBuyOrder.orderMessage, "ClOrdID", "SecondaryClOrdID", "OrderQty")
             .addFields(
                 "TransactTime" to transTime1,
                 "CumQty" to cumQty1,
                 "Price" to order2Price,
                 "LastPx" to order2Price,
-                "OrderID" to secondId,
+                "OrderID" to secondBuyOrder.orderId,
                 "ExecID" to execId.incrementAndGet(),
-                "TrdMatchID" to tradeMatchID1
+                "TrdMatchID" to tradeMatchId1
             ).build()
 
         context.send(trader1Order2.toBuilder().with(sessionAlias = alias1))
@@ -206,21 +209,21 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
 
         // ER FF Order1 for Trader1
         val trader1Order1 = trader1.toBuilder()
-            .copyFields(firstBuyOrder, "ClOrdID", "SecondaryClOrdID", "OrderQty", "Price")
+            .copyFields(firstBuyOrder.orderMessage, "ClOrdID", "SecondaryClOrdID", "OrderQty", "Price")
             .addFields(
                 "TransactTime" to transTime2,
                 "CumQty" to cumQty2,
-                "LastPx" to firstBuyOrder.getField("Price"),
-                "OrderID" to firstId,
+                "LastPx" to firstBuyOrder.orderMessage.getField("Price"),
+                "OrderID" to firstBuyOrder.orderId,
                 "ExecID" to execId.incrementAndGet(),
-                "TrdMatchID" to tradeMatchID2,
+                "TrdMatchID" to tradeMatchId2,
             ).build()
 
         context.send(trader1Order1.toBuilder().with(sessionAlias = alias1))
         context.send(trader1Order1.toBuilder().with(sessionAlias = aliasdc1))
 
         val trader2 = message("ExecutionReport").copyFields(
-            sellOrder,
+            sellOrder.orderMessage,
             "TimeInForce",
             "Side",
             "Price",
@@ -232,7 +235,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
             "OrderCapacity",
             "AccountType"
         ).addFields(
-            "OrderID" to sellId
+            "OrderID" to sellOrder.orderId
         ).build()
 
         val trader2Order3 = trader2.toBuilder()
@@ -240,7 +243,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                 "TradingParty" to noPartyIdsTrader2Order3,
                 "ExecType" to "F",
                 "OrdStatus" to "1",
-                "OrderQty" to sellOrder.getString("OrderQty")!!,
+                "OrderQty" to sellOrder.orderMessage.getString("OrderQty")!!,
                 "Text" to "The simulated order has been partially traded"
             ).build()
 
@@ -249,9 +252,9 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                 "TransactTime" to transTime1,
                 "LastPx" to order2Price,
                 "CumQty" to cumQty1,
-                "LeavesQty" to sellOrder.getInt("OrderQty")!! - cumQty1,
+                "LeavesQty" to sellOrder.orderMessage.getInt("OrderQty")!! - cumQty1,
                 "ExecID" to execId.incrementAndGet(),
-                "TrdMatchID" to tradeMatchID1,
+                "TrdMatchID" to tradeMatchId1,
             ).build()
 
         // ER1 PF Order3 for Trader2
@@ -266,7 +269,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
             "CumQty" to cumQty1 + cumQty2,
             "LeavesQty" to leavesQty2,
             "ExecID" to execId.incrementAndGet(),
-            "TrdMatchID" to tradeMatchID2,
+            "TrdMatchID" to tradeMatchId2,
         ).build()
 
         context.send(trader2Order3Er2.toBuilder().apply {
@@ -293,10 +296,10 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     "OrdStatus" to "2",
                     "LastPx" to order1Price,
                     "CumQty" to cumQty1 + cumQty2,
-                    "OrderQty" to sellOrder.getString("OrderQty")!!,
+                    "OrderQty" to sellOrder.orderMessage.getString("OrderQty")!!,
                     "LeavesQty" to leavesQty2,
                     "ExecID" to execId.incrementAndGet(),
-                    "TrdMatchID" to tradeMatchID2,
+                    "TrdMatchID" to tradeMatchId2,
                     "Text" to "Extra Execution Report"
                 )
             context.send(trader2Order3fixX.with(sessionAlias = alias2))
@@ -304,14 +307,14 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
 
         // ER3 CC Order3 for Trader2
         val trader2Order3Er3CC = trader2.toBuilder()
-            .copyFields(sellOrder, "TradingParty")
+            .copyFields(sellOrder.orderMessage, "TradingParty")
             .addFields(
                 "TransactTime" to LocalDateTime.now(),
                 "ExecType" to "C",
                 "OrdStatus" to "C",
                 "CumQty" to cumQty1 + cumQty2,
                 "LeavesQty" to "0",
-                "OrderQty" to sellOrder.getString("OrderQty")!!,
+                "OrderQty" to sellOrder.orderMessage.getString("OrderQty")!!,
                 "ExecID" to execId.incrementAndGet(),
                 "Text" to "The remaining part of simulated order has been expired"
             ).build()

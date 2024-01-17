@@ -64,10 +64,10 @@ class FixRuleTest {
 
     @Test
     fun `INSTR4 test`() {
-        KotlinFIXRule.reset()
         // test to check response of message with field SecurityID = INSTR4 and side = 1/2
         testRule {
             val rule = KotlinFIXRule(mapOf("check" to "true"))
+            rule.reset()
 
             for (i in 0..1) {
                 rule.assertHandle(message("NewOrderSingle").apply {
@@ -117,10 +117,10 @@ class FixRuleTest {
 
     @Test
     fun `INSTR5 test`() {
-        KotlinFIXRule.reset()
         // test to check response of message with field SecurityID = INSTR5 and side = 1/2
         testRule {
             val rule = KotlinFIXRule(mapOf("check" to "true"))
+            rule.reset()
 
             for (i in 0..1) {
                 rule.assertHandle(message("NewOrderSingle") {
@@ -172,10 +172,10 @@ class FixRuleTest {
 
     @Test
     fun `INSTR6 test`() {
-        KotlinFIXRule.reset()
         // test to check response of message with field SecurityID = INSTR6
         testRule {
             val rule = KotlinFIXRule(mapOf("check" to "true"))
+            rule.reset()
 
             rule.assertHandle(message("NewOrderSingle") {
                 addFields(
