@@ -37,23 +37,25 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
     private val alias2 = "fix-demo-server2"
     private val aliasdc1 = "dc-demo-server1"
     private val aliasdc2 = "dc-demo-server2"
-    private val lock = Any()
-    private val buyOrdersAndIds: Queue<OrderWithId> = ConcurrentLinkedQueue()
-    private val sellOrdersAndIds: Queue<OrderWithId> = ConcurrentLinkedQueue()
 
     companion object {
         private val orderId = AtomicInteger(0)
         private val execId = AtomicInteger(0)
         private val TrdMatchId = AtomicInteger(0)
-    }
-    fun reset() {
-        orderId.set(0)
-        execId.set(0)
-        TrdMatchId.set(0)
 
-        synchronized(lock) {
-            buyOrdersAndIds.clear()
-            sellOrdersAndIds.clear()
+        private val lock = Any()
+        private val buyOrdersAndIds: Queue<OrderWithId> = ConcurrentLinkedQueue()
+        private val sellOrdersAndIds: Queue<OrderWithId> = ConcurrentLinkedQueue()
+
+        fun reset() {
+            orderId.set(0)
+            execId.set(0)
+            TrdMatchId.set(0)
+
+            synchronized(lock) {
+                buyOrdersAndIds.clear()
+                sellOrdersAndIds.clear()
+            }
         }
     }
 
