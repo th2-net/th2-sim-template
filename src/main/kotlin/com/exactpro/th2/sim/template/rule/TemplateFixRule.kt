@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.th2.sim.template.rule
 
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
@@ -21,6 +22,7 @@ import com.exactpro.th2.common.utils.message.transport.copyFields
 import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
+import com.exactpro.th2.sim.template.FixFields
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -36,23 +38,23 @@ class TemplateFixRule(field: Map<String, Any?>) : MessageCompareRule() {
     override fun handle(context: IRuleContext, incomeMessage: ParsedMessage) {
         context.send(
             message("ExecutionReport").addFields(
-                "OrderID" to orderId.incrementAndGet(),
-                "ExecID" to execId.incrementAndGet(),
-                "ExecType" to "2",
-                "OrdStatus" to "0",
-                "CumQty" to "0",
-                "TradingParty" to null,
-                "TransactTime" to LocalDateTime.now().toString(),
+                FixFields.ORDER_ID to orderId.incrementAndGet(),
+                FixFields.EXEC_ID to execId.incrementAndGet(),
+                FixFields.EXEC_TYPE to "2",
+                FixFields.ORD_STATUS to "0",
+                FixFields.CUM_QTY to "0",
+                FixFields.TRADING_PARTY to null,
+                FixFields.TRANSACT_TIME to LocalDateTime.now().toString(),
             ).copyFields(
                 incomeMessage,
-                "Side",
-                "LeavesQty",
-                "ClOrdID",
-                "SecondaryClOrdID",
-                "SecurityID",
-                "SecurityIDSource",
-                "OrdType",
-                "OrderQty"
+                FixFields.SIDE,
+                FixFields.LEAVES_QTY,
+                FixFields.CL_ORD_ID,
+                FixFields.SECONDARY_CL_ORD_ID,
+                FixFields.SECURITY_ID,
+                FixFields.SECURITY_ID_SOURCE,
+                FixFields.ORD_TYPE,
+                FixFields.ORDER_QTY
             )
         )
     }

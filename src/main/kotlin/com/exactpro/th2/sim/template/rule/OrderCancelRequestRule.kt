@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.exactpro.th2.common.utils.message.transport.getField
 import com.exactpro.th2.common.utils.message.transport.getFieldSoft
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessagePredicateRule
+import com.exactpro.th2.sim.template.FixFields
 
 class DemoCancelRequestRule(field: Map<String, Any?>) : MessagePredicateRule() {
     private val alias = "fix-demo-server1"
@@ -37,29 +38,29 @@ class DemoCancelRequestRule(field: Map<String, Any?>) : MessagePredicateRule() {
     }
 
     override fun handle(context: IRuleContext, incomeMessage: ParsedMessage) {
-        val response = if (!incomeMessage.containsField("SecurityID")) {
+        val response = if (!incomeMessage.containsField(FixFields.SECURITY_ID)) {
             message("BusinessMessageReject").addFields(
-                "RefTagID" to "48",
-                "RefMsgType" to "f",
-                "RefSeqNum" to incomeMessage.getFieldSoft("BeginString", "MsgSeqNum"),
-                "Text" to "Incorrect instrument",
-                "SessionRejectReason" to "99"
+                FixFields.REF_TAG_ID to "48",
+                FixFields.REF_MSG_TYPE to "f",
+                FixFields.REF_SEQ_NUM to incomeMessage.getFieldSoft(FixFields.BEGIN_STRING, FixFields.MSG_SEQ_NUM),
+                FixFields.TEXT to "Incorrect instrument",
+                FixFields.SESSION_REJECT_REASON to "99"
             )
         } else {
             val builder = message("ExecutionReport")
-                .copyFields(incomeMessage, "ClOrdID", "SecondaryClOrdID", "Symbol", "Side", "TransactTime")
+                .copyFields(incomeMessage, FixFields.CL_ORD_ID, FixFields.SECONDARY_CL_ORD_ID, FixFields.SYMBOL, FixFields.SIDE, FixFields.TRANSACT_TIME)
 
-            when (incomeMessage.getField("header", "MsgType")) {
+            when (incomeMessage.getField("header", FixFields.MSG_TYPE)) {
                 "F" -> builder // OrderCancelRequest
                     .addFields(
-                        "OrdStatus" to "5", // "Cancelled"
-                        "Text" to "The simulated order has been cancelled"
+                        FixFields.ORD_STATUS to "5", // "Cancelled"
+                        FixFields.TEXT to "The simulated order has been cancelled"
                     )
 
                 "G" -> builder // OrderCancelReplaceRequest
                     .addFields(
-                        "OrdStatus" to "3", // "Replaced"
-                        "Text" to "The simulated order has been replaced"
+                        FixFields.ORD_STATUS to "3", // "Replaced"
+                        FixFields.TEXT to "The simulated order has been replaced"
                     )
 
                 else -> error("wrong MsgType")
