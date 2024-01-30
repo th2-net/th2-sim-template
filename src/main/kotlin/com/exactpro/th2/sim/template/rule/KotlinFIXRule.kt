@@ -102,7 +102,9 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
 
         val incomeOrderId = orderId.incrementAndGet()
         if (incomeMessage.getInt(FixFields.SIDE) == 1) {
-            buyOrdersAndIds.add(OrderWithId(incomeMessage, incomeOrderId))
+            synchronized(lock) {
+                buyOrdersAndIds.add(OrderWithId(incomeMessage, incomeOrderId))
+            }
             val fixNew = message("ExecutionReport")
                 .copyFields(
                     incomeMessage,
@@ -139,7 +141,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     .addField(FixFields.EXEC_ID, execId.incrementAndGet())
                     .with(sessionAlias = aliasdc1)
             )
-        } else {
+        } else synchronized(lock) {
             sellOrdersAndIds.add(OrderWithId(incomeMessage, incomeOrderId))
         }
 
