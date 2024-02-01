@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.exactpro.th2.common.utils.message.transport.getString
 import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
+import com.exactpro.th2.sim.template.FixFields
 
 class KotlinFIXRuleSecurity(field: Map<String, Any?>) : MessageCompareRule() {
 
@@ -32,45 +33,45 @@ class KotlinFIXRuleSecurity(field: Map<String, Any?>) : MessageCompareRule() {
     }
 
     override fun handle(context: IRuleContext, incomeMessage: ParsedMessage) {
-        if (!incomeMessage.containsField("SecurityID")) {
+        if (!incomeMessage.containsField(FixFields.SECURITY_ID)) {
             val reject = message("Reject").addFields(
-                "RefTagID" to "48",
-                "RefMsgType" to "f",
-                "RefSeqNum" to incomeMessage.getFieldSoft("BeginString", "MsgSeqNum"),
-                "Text" to "Incorrect instrument",
-                "SessionRejectReason" to "99"
+                FixFields.REF_TAG_ID to "48",
+                FixFields.REF_MSG_TYPE to "f",
+                FixFields.REF_SEQ_NUM to incomeMessage.getFieldSoft(FixFields.BEGIN_STRING, FixFields.MSG_SEQ_NUM),
+                FixFields.TEXT to "Incorrect instrument",
+                FixFields.SESSION_REJECT_REASON to "99"
             )
             context.send(reject)
         } else {
-            if (incomeMessage.getString("SecurityID") == "INSTR6") {
+            if (incomeMessage.getString(FixFields.SECURITY_ID) == "INSTR6") {
                 val unknownInstr = message("SecurityStatus").addFields(
-                    "SecurityID" to incomeMessage.getString("SecurityID")!!,
-                    "SecurityIDSource" to incomeMessage.getString("SecurityIDSource")!!,
-                    "SecurityStatusReqID" to incomeMessage.getString("SecurityStatusReqID")!!,
-                    "UnsolicitedIndicator" to "N",
-                    "SecurityTradingStatus" to "20",
-                    "Text" to "Unknown or Invalid instrument"
+                    FixFields.SECURITY_ID to incomeMessage.getString(FixFields.SECURITY_ID)!!,
+                    FixFields.SECURITY_ID_SOURCE to incomeMessage.getString(FixFields.SECURITY_ID_SOURCE)!!,
+                    FixFields.SECURITY_STATUS_REQ_ID to incomeMessage.getString(FixFields.SECURITY_STATUS_REQ_ID)!!,
+                    FixFields.UNSOLICITED_INDICATOR to "N",
+                    FixFields.SECURITY_TRADING_STATUS to "20",
+                    FixFields.TEXT to "Unknown or Invalid instrument"
                 )
                 context.send(unknownInstr)
             } else {
                 val securityStatus1 = message("SecurityStatus").addFields(
-                    "SecurityID" to incomeMessage.getString("SecurityID")!!,
-                    "SecurityIDSource" to incomeMessage.getString("SecurityIDSource")!!,
-                    "SecurityStatusReqID" to incomeMessage.getString("SecurityStatusReqID")!!,
-                    "Currency" to "RUB",
-                    "MarketID" to "Demo Market",
-                    "MarketSegmentID" to "NEW",
-                    "TradingSessionID" to "1",
-                    "TradingSessionSubID" to "3",
-                    "UnsolicitedIndicator" to "N",
-                    "SecurityTradingStatus" to "17",
-                    "BuyVolume" to "0",
-                    "SellVolume" to "0",
-                    "HighPx" to "56",
-                    "LowPx" to "54",
-                    "LastPx" to "54",
-                    "FirstPx" to "54",
-                    "Text" to "The simulated SecurityStatus has been sent"
+                    FixFields.SECURITY_ID to incomeMessage.getString(FixFields.SECURITY_ID)!!,
+                    FixFields.SECURITY_ID_SOURCE to incomeMessage.getString(FixFields.SECURITY_ID_SOURCE)!!,
+                    FixFields.SECURITY_STATUS_REQ_ID to incomeMessage.getString(FixFields.SECURITY_STATUS_REQ_ID)!!,
+                    FixFields.CURRENCY to "JPY",
+                    FixFields.MARKET_ID to "Demo Market",
+                    FixFields.MARKET_SEGMENT_ID to "NEW",
+                    FixFields.TRADING_SESSION_ID to "1",
+                    FixFields.TRADING_SESSION_SUB_ID to "3",
+                    FixFields.UNSOLICITED_INDICATOR to "N",
+                    FixFields.SECURITY_TRADING_STATUS to "17",
+                    FixFields.BUY_VOLUME to "0",
+                    FixFields.SELL_VOLUME to "0",
+                    FixFields.HIGH_PX to "56",
+                    FixFields.LOW_PX to "54",
+                    FixFields.LAST_PX to "54",
+                    FixFields.FIRST_PX to "54",
+                    FixFields.TEXT to "The simulated SecurityStatus has been sent"
                 )
                 context.send(securityStatus1)
             }

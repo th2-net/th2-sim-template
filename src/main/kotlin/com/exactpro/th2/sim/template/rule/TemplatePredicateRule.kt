@@ -19,6 +19,7 @@ import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMess
 import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessagePredicateRule
+import com.exactpro.th2.sim.template.FixFields
 import java.math.BigDecimal
 import java.util.function.Predicate
 
@@ -41,6 +42,6 @@ class TemplatePredicateRule : MessagePredicateRule() {
     }
 
     override fun handle(context: IRuleContext, incomingMessage: ParsedMessage) {
-        context.send(message("ExecutionReport").addField("ClOrdID", "orderId").build())
+        context.send(message("ExecutionReport").addField(FixFields.CL_ORD_ID, FixFields.ORDER_ID).build())
     }
 }
