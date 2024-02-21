@@ -50,6 +50,13 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ## Release notes
 
+### 4.1.0
+
++ Message batching added
+  + `maxMessageBatchSize` and `maxMessageFlushTime` custom configuration settings added
++ Updated th2-sim to version 7.1.0
++ Updated `common-j` to 5.8.0
+
 ### 4.0.1
 
 + JDK downgrade to v11
