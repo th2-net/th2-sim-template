@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,14 +33,14 @@ import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 
-class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
-    // FIXME: processed server aliases must be configurable
-    private val alias1 = "fix-demo-server1"
-    private val alias2 = "fix-demo-server2"
-    private val aliasdc1 = "dc-demo-server1"
-    private val aliasdc2 = "dc-demo-server2"
+class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, String>) : MessageCompareRule() {
 
     companion object {
+        private const val KEY_ALIAS_1 = "ALIAS_1"
+        private const val KEY_ALIAS_2 = "ALIAS_2"
+        private const val KEY_DC_ALIAS_1 = "DC_ALIAS_1"
+        private const val KEY_DC_ALIAS_2 = "DC_ALIAS_2"
+
         private val orderId = AtomicInteger(0)
         private val execId = AtomicInteger(0)
         private val TrdMatchId = AtomicInteger(0)
@@ -63,8 +63,17 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
 
     private class OrderWithId(val orderMessage: ParsedMessage, val orderId: Int)
 
+    private val aliases: Map<String, String>
+
     init {
-        init("NewOrderSingle", field)
+        init("NewOrderSingle", fields)
+
+        aliases = sessionAliases.toMutableMap().apply {
+            putIfAbsent(KEY_ALIAS_1, "fix-demo-server1")
+            putIfAbsent(KEY_ALIAS_2, "fix-demo-server2")
+            putIfAbsent(KEY_DC_ALIAS_1, "dc-demo-server1")
+            putIfAbsent(KEY_DC_ALIAS_2, "dc-demo-server2")
+        }
     }
 
     // FIXME: rule should able to handle several instruments independently
@@ -75,7 +84,10 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     .addFields(
                         FixFields.REF_TAG_ID to "453",
                         FixFields.REF_MSG_TYPE to "D",
-                        FixFields.REF_SEQ_NUM to incomeMessage.getFieldSoft(FixFields.BEGIN_STRING, FixFields.MSG_SEQ_NUM),
+                        FixFields.REF_SEQ_NUM to incomeMessage.getFieldSoft(
+                            FixFields.BEGIN_STRING,
+                            FixFields.MSG_SEQ_NUM
+                        ),
                         FixFields.TEXT to "Simulating reject message",
                         FixFields.SESSION_REJECT_REASON to "1"
                     ).with(sessionAlias = incomeMessage.id.sessionAlias)
@@ -134,12 +146,12 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
             context.send(
                 fixNew.toBuilder()
                     .addField(FixFields.EXEC_ID, execId.incrementAndGet())
-                    .with(sessionAlias = alias1)
+                    .with(sessionAlias = aliases[KEY_ALIAS_1])
             )
             context.send(
                 fixNew.toBuilder()
                     .addField(FixFields.EXEC_ID, execId.incrementAndGet())
-                    .with(sessionAlias = aliasdc1)
+                    .with(sessionAlias = aliases[KEY_DC_ALIAS_1])
             )
         } else synchronized(lock) {
             sellOrdersAndIds.add(OrderWithId(incomeMessage, incomeOrderId))
@@ -200,7 +212,12 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
             ).build()
 
         val trader1Order2 = trader1.toBuilder()
-            .copyFields(secondBuyOrder.orderMessage, FixFields.CL_ORD_ID, FixFields.SECONDARY_CL_ORD_ID, FixFields.ORDER_QTY)
+            .copyFields(
+                secondBuyOrder.orderMessage,
+                FixFields.CL_ORD_ID,
+                FixFields.SECONDARY_CL_ORD_ID,
+                FixFields.ORDER_QTY
+            )
             .addFields(
                 FixFields.TRANSACT_TIME to transTime1,
                 FixFields.CUM_QTY to cumQty1,
@@ -211,12 +228,18 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                 FixFields.TRD_MATCH_ID to tradeMatchId1
             ).build()
 
-        context.send(trader1Order2.toBuilder().with(sessionAlias = alias1))
-        context.send(trader1Order2.toBuilder().with(sessionAlias = aliasdc1))
+        context.send(trader1Order2.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_1]))
+        context.send(trader1Order2.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_1]))
 
         // ER FF Order1 for Trader1
         val trader1Order1 = trader1.toBuilder()
-            .copyFields(firstBuyOrder.orderMessage, FixFields.CL_ORD_ID, FixFields.SECONDARY_CL_ORD_ID, FixFields.ORDER_QTY, FixFields.PRICE)
+            .copyFields(
+                firstBuyOrder.orderMessage,
+                FixFields.CL_ORD_ID,
+                FixFields.SECONDARY_CL_ORD_ID,
+                FixFields.ORDER_QTY,
+                FixFields.PRICE
+            )
             .addFields(
                 FixFields.TRANSACT_TIME to transTime2,
                 FixFields.CUM_QTY to cumQty2,
@@ -226,8 +249,8 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                 FixFields.TRD_MATCH_ID to tradeMatchId2,
             ).build()
 
-        context.send(trader1Order1.toBuilder().with(sessionAlias = alias1))
-        context.send(trader1Order1.toBuilder().with(sessionAlias = aliasdc1))
+        context.send(trader1Order1.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_1]))
+        context.send(trader1Order1.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_1]))
 
         val trader2 = message("ExecutionReport").copyFields(
             sellOrder.orderMessage,
@@ -265,9 +288,9 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
             ).build()
 
         // ER1 PF Order3 for Trader2
-        context.send(trader2Order3Er1.toBuilder().with(sessionAlias = alias2))
+        context.send(trader2Order3Er1.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_2]))
         //DropCopy
-        context.send(trader2Order3Er1.toBuilder().with(sessionAlias = aliasdc2))
+        context.send(trader2Order3Er1.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_2]))
 
         // ER2 PF Order3 for Trader2
         val trader2Order3Er2 = trader2Order3.toBuilder().addFields(
@@ -280,7 +303,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
         ).build()
 
         context.send(trader2Order3Er2.toBuilder().apply {
-            with(sessionAlias = alias2)
+            with(sessionAlias = aliases[KEY_ALIAS_2])
             if (instrument == "INSTR5") {
                 addFields(
                     FixFields.TEXT to "Execution Report with incorrect value in OrdStatus tag",
@@ -291,7 +314,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
         })
 
         //DropCopy
-        context.send(trader2Order3Er2.toBuilder().with(sessionAlias = aliasdc2))
+        context.send(trader2Order3Er2.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_2]))
 
         if (instrument == "INSTR4") {
             // Extra ER3 FF Order3 for Trader2 as testcase
@@ -309,7 +332,7 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                     FixFields.TRD_MATCH_ID to tradeMatchId2,
                     FixFields.TEXT to "Extra Execution Report"
                 )
-            context.send(trader2Order3fixX.with(sessionAlias = alias2))
+            context.send(trader2Order3fixX.with(sessionAlias = aliases[KEY_ALIAS_2]))
         }
 
         // ER3 CC Order3 for Trader2
@@ -325,9 +348,9 @@ class KotlinFIXRule(field: Map<String, Any?>) : MessageCompareRule() {
                 FixFields.EXEC_ID to execId.incrementAndGet(),
                 FixFields.TEXT to "The remaining part of simulated order has been expired"
             ).build()
-        context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = alias2))
+        context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_2]))
         //DropCopy
-        context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliasdc2))
+        context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_2]))
     }
 
     private fun createNoPartyIds(connect: String, firm: String): List<Map<String, Any>> = listOf(

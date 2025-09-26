@@ -31,7 +31,7 @@ class FixRuleTest {
     @Test
     fun `negative test`() {
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true"))
+            val rule = KotlinFIXRule(mapOf("check" to "true"), emptyMap())
 
             // wrong type of message test
             rule.assertNotTriggered(message("WrongOrder") {
@@ -50,7 +50,7 @@ class FixRuleTest {
     @Test
     fun `positive rejected test`() {
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true"))
+            val rule = KotlinFIXRule(mapOf("check" to "true"), emptyMap())
 
             // correct type and field check buy without side field
             rule.assertHandle(message("NewOrderSingle").apply {
@@ -67,7 +67,7 @@ class FixRuleTest {
     fun `INSTR4 test`() {
         // test to check response of message with field SecurityID = INSTR4 and side = 1/2
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true"))
+            val rule = KotlinFIXRule(mapOf("check" to "true"), emptyMap())
             KotlinFIXRule.reset()
 
             for (i in 0..1) {
@@ -120,7 +120,7 @@ class FixRuleTest {
     fun `INSTR5 test`() {
         // test to check response of message with field SecurityID = INSTR5 and side = 1/2
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true"))
+            val rule = KotlinFIXRule(mapOf("check" to "true"), emptyMap())
             KotlinFIXRule.reset()
 
             for (i in 0..1) {
@@ -175,7 +175,7 @@ class FixRuleTest {
     fun `INSTR6 test`() {
         // test to check response of message with field SecurityID = INSTR6
         testRule {
-            val rule = KotlinFIXRule(mapOf("check" to "true"))
+            val rule = KotlinFIXRule(mapOf("check" to "true"), emptyMap())
             KotlinFIXRule.reset()
 
             rule.assertHandle(message("NewOrderSingle") {
