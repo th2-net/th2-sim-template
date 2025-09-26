@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,11 +40,11 @@ class TemplateService : SimTemplateGrpc.SimTemplateImplBase(), ISimulatorPart {
         ServiceUtils.addRule(TemplateFixRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
 
     override fun createDemoRule(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
-        ServiceUtils.addRule(KotlinFIXRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+        ServiceUtils.addRule(KotlinFIXRule(request.fieldsMap, request.sessionAliasesMap), request.connectionId.sessionAlias, simulator, responseObserver)
 
     override fun createRuleFixSecurity(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
         ServiceUtils.addRule(KotlinFIXRuleSecurity(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
 
     override fun createDemoRuleCancelReplace(request: TemplateFixRuleCreate, responseObserver: StreamObserver<RuleID>?) =
-        ServiceUtils.addRule(DemoCancelRequestRule(request.fieldsMap), request.connectionId.sessionAlias, simulator, responseObserver)
+        ServiceUtils.addRule(DemoCancelRequestRule(request.sessionAliasesMap), request.connectionId.sessionAlias, simulator, responseObserver)
     }

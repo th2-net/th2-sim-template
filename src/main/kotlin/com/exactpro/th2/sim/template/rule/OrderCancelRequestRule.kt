@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,18 @@ import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessagePredicateRule
 import com.exactpro.th2.sim.template.FixFields
 
-class DemoCancelRequestRule(field: Map<String, Any?>) : MessagePredicateRule() {
-    private val alias = "fix-demo-server1"
+class DemoCancelRequestRule(sessionAliases: Map<String, String>) : MessagePredicateRule() {
+    private val aliases: Map<String, String>
 
     init {
         init(
             { it in setOf("OrderCancelRequest", "OrderCancelReplaceRequest") },
             emptyMap()
         )
+
+        aliases = sessionAliases.toMutableMap().apply {
+            putIfAbsent(KEY_ALIAS_1, "fix-demo-server1")
+        }
     }
 
     override fun handle(context: IRuleContext, incomeMessage: ParsedMessage) {
@@ -66,7 +70,13 @@ class DemoCancelRequestRule(field: Map<String, Any?>) : MessagePredicateRule() {
                 else -> error("wrong MsgType")
             }
         }
-        response.idBuilder().setSessionAlias(alias)
+        response.idBuilder().setSessionAlias(requireNotNull(aliases[KEY_ALIAS_1]) {
+            "Alias for $KEY_ALIAS_1 key isn't defined in settings"
+        })
         context.send(response)
+    }
+
+    companion object {
+        private const val KEY_ALIAS_1 = "ALIAS_1"
     }
 }
