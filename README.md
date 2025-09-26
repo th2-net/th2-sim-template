@@ -58,6 +58,7 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
   + kotlin: `2.2.10`
   + common: `5.16.1-dev`
   + common-utils: `2.4.0-dev`
+  + grpc-sim-template: `3.4.0`
 
 ### 4.1.0
 
