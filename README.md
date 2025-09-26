@@ -52,13 +52,13 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ### 4.2.0
 
-+ Migrate to th2 gradle plugin `0.3.7` (bom: `4.14.1`)
++ Migrate to th2 gradle plugin `0.3.8` (bom: `4.14.1`)
 + Updated GitHub workflows
 + Updated:
   + kotlin: `2.2.10`
   + common: `5.16.1-dev`
   + common-utils: `2.4.0-dev`
-  + grpc-sim-template: `3.4.0`
+  + grpc-sim-template: `3.4.0-dev`
 
 ### 4.1.0
 
