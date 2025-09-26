@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+/*
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,23 +12,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ */
 package com.exactpro.th2.sim.template.rule
 
-import com.exactpro.th2.common.grpc.Message
-import com.exactpro.th2.common.message.addField
-import com.exactpro.th2.common.message.copyFields
-import com.exactpro.th2.common.message.getField
-import com.exactpro.th2.common.message.message
-import com.exactpro.th2.common.value.getInt
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
+import com.exactpro.th2.common.utils.message.transport.copyFields
+import com.exactpro.th2.common.utils.message.transport.getInt
+import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.AbstractRule
 
 class TemplateAbstractRule : AbstractRule() {
 
-    override fun checkTriggered(input: Message): Boolean {
-        input.getField("field1")?.getInt()?.also { a ->
-            input.getField("field2")?.getInt()?.also { b ->
+    override fun checkTriggered(input: ParsedMessage): Boolean {
+        input.getInt("field1")?.also { a ->
+            input.getInt("field2")?.also { b ->
                 return a + b > 80
             }
         }
@@ -36,8 +34,12 @@ class TemplateAbstractRule : AbstractRule() {
         return false
     }
 
-    override fun handle(context: IRuleContext, incomingMessage: Message) {
-        return context.send(message("ExecutionReport").copyFields(incomingMessage, "field1", "field3").addField("field4", "value").build())
+    override fun handle(context: IRuleContext, incomingMessage: ParsedMessage) {
+        return context.send(
+            message("ExecutionReport")
+                .addField("field4", "value")
+                .copyFields(incomingMessage, "field1", "field3")
+        )
     }
 
 }

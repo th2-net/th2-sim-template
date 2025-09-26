@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+/*
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,17 +12,14 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ */
 package com.exactpro.th2.sim.template.rule
 
-import com.exactpro.th2.common.grpc.Message
-import com.exactpro.th2.common.message.addField
-import com.exactpro.th2.common.message.message
-import com.exactpro.th2.common.value.getBigDecimal
-import com.exactpro.th2.common.value.getInt
-import com.exactpro.th2.common.value.getString
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
+import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessagePredicateRule
+import com.exactpro.th2.sim.template.FixFields
 import java.math.BigDecimal
 import java.util.function.Predicate
 
@@ -30,13 +27,21 @@ class TemplatePredicateRule : MessagePredicateRule() {
     init {
         init({mt -> mt == "NewOrderSingle" },
             mapOf(
-                "field" to Predicate { value -> value.getInt()!! > 0},
-                "field2" to Predicate { value -> value.getString()?.matches(Regex("A*")) ?: false},
-                "field3" to Predicate {value -> value.getBigDecimal()?.compareTo(BigDecimal(12))!! >= 0 }
+                "field" to Predicate { value ->
+                    requireNotNull(value) {
+                        "The 'field' value is null"
+                    }.toString().toInt() > 0
+                },
+                "field2" to Predicate { value -> value?.toString()?.matches(Regex("A*")) ?: false },
+                "field3" to Predicate { value ->
+                    requireNotNull(value) {
+                        "The 'field3' value is null"
+                    }.toString().toBigDecimal() >= BigDecimal(12)
+                }
             ))
     }
 
-    override fun handle(context: IRuleContext, incomingMessage: Message) {
-        context.send(message("ExecutionReport").addField("ClOrdID", "orderId").build())
+    override fun handle(context: IRuleContext, incomingMessage: ParsedMessage) {
+        context.send(message("ExecutionReport").addField(FixFields.CL_ORD_ID, FixFields.ORDER_ID).build())
     }
 }

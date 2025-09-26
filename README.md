@@ -50,6 +50,34 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ## Release notes
 
+### 4.2.0
+
++ Migrate to th2 gradle plugin `0.3.8` (bom: `4.14.1`)
++ Updated GitHub workflows
++ Updated:
+  + kotlin: `2.2.10`
+  + common: `5.16.1-dev`
+  + common-utils: `2.4.0-dev`
+  + grpc-sim-template: `3.4.0-dev`
+
+### 4.1.0
+
++ Message batching added
+  + `maxMessageBatchSize` and `maxMessageFlushTime` custom configuration settings added
++ Updated th2-sim to version 7.1.0
++ Updated `common-j` to 5.8.0
+
+### 4.0.1
+
++ JDK downgrade to v11
+
+### 4.0.0
++ Update `kotlin.jvm` to `1.8.22`
++ Added `kotlin_version`, `sim_version` and `common_version` to `gradle.properties`
++ Migration to books/pages cradle 5.1.1
+  + Update `common-j` to 5.6.0
+  + Update `common-utils-j` to 2.2.2
+
 ### 3.7.0
 + Update th2-common to version 3.44.0
 + Update bom to version 4.1.0
