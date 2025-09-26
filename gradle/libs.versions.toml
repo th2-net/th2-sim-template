@@ -1,0 +1,13 @@
+[versions]
+kotlin = "2.2.10"
+th2-plugin = "0.3.7"
+
+[libraries]
+th2-common = { group = "com.exactpro.th2", name = "common", version = "5.16.1-dev" }
+th2-common-utils = { group = "com.exactpro.th2", name = "common-utils", version = "2.4.0-dev" }
+th2-sim = { group = "com.exactpro.th2", name = "sim", version = "7.1.0-dev" }
+th2-grpc-sim-template = { group = "com.exactpro.th2", name = "grpc-sim-template", version = "3.3.0" }
+
+[plugins]
+th2-component = { id = "com.exactpro.th2.gradle.component", version.ref = "th2-plugin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

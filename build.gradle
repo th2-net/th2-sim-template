@@ -1,123 +1,26 @@
-import com.github.jk1.license.filter.LicenseBundleNormalizer
-import com.github.jk1.license.render.JsonReportRenderer
-
-buildscript {
-    repositories {
-        maven {
-            name 'Sonatype_snapshots'
-            url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-        }
-    }
-    dependencies {
-        classpath "com.exactpro.th2:box-descriptor-generator:0.1.10"
-    }
-}
-
 plugins {
-    id 'java'
-    id 'java-library'
-    id 'java-test-fixtures'
-    id 'maven-publish'
-    id 'application'
-    id 'com.palantir.docker' version '0.25.0'
-    id 'org.jetbrains.kotlin.jvm' version "$kotlin_version"
-    id "com.gorylenko.gradle-git-properties" version "2.4.1"
-    id "com.github.jk1.dependency-license-report" version "2.5"
-    id "de.undercouch.download" version "5.5.0"
-    id "org.owasp.dependencycheck" version "8.4.0"
+    id "application"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.th2.component)
 }
 
-dependencyCheck {
-    formats=['SARIF', 'HTML']
-}
-
-apply plugin: 'th2plugin'
-
-parameters {
-    namePatterns = ["grpc"]
-    outputDirectory = "."
-}
-
-group 'com.exactpro.th2'
-version release_version
+group = 'com.exactpro.th2'
+version = release_version
 
 repositories {
-    maven {
-        name 'Sonatype_snapshots'
-        url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-    }
-    maven {
-        name 'Sonatype_releases'
-        url 'https://s01.oss.sonatype.org/content/repositories/releases/'
-    }
     mavenCentral()
-    mavenLocal()
-
-    configurations.configureEach {
-        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-        resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
-    }
 }
 
 dependencies {
-    api platform("com.exactpro.th2:bom:4.5.0")
+    implementation(libs.th2.common)
+    implementation(libs.th2.common.utils)
+    implementation(libs.th2.sim)
+    api(libs.th2.grpc.sim.template)
 
-    implementation "com.exactpro.th2:sim:$sim_version"
-    implementation "com.exactpro.th2:common:$common_version"
-    implementation "com.exactpro.th2:common-utils:$common_utils_version"
-    api "com.exactpro.th2:grpc-sim-template:3.3.0"
-
-    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5:$kotlin_version"
-    testImplementation testFixtures("com.exactpro.th2:sim:$sim_version")
-    testImplementation testFixtures("com.exactpro.th2:common:$common_version")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation testFixtures(libs.th2.common)
+    testImplementation testFixtures(libs.th2.sim)
 }
 
-test {
-    useJUnitPlatform()
-}
-
-application {
-    mainClassName = "com.exactpro.th2.sim.run.SimulatorServerMain"
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
-}
-
-applicationName = 'service'
-
-distTar {
-    archiveName "${applicationName}.tar"
-}
-
-dockerPrepare {
-    dependsOn distTar
-}
-
-docker {
-    copySpec.from(tarTree("$buildDir/distributions/${applicationName}.tar"))
-}
-
-kotlin {
-    jvmToolchain(11)
-}
-
-licenseReport {
-    def licenseNormalizerBundlePath = "$buildDir/license-normalizer-bundle.json"
-
-    if (!file(licenseNormalizerBundlePath).exists()) {
-        download.run {
-            src 'https://raw.githubusercontent.com/th2-net/.github/main/license-compliance/gradle-license-report/license-normalizer-bundle.json'
-            dest "$buildDir/license-normalizer-bundle.json"
-            overwrite false
-        }
-    }
-
-    filters = [ new LicenseBundleNormalizer(licenseNormalizerBundlePath, false) ]
-    renderers = [ new JsonReportRenderer('licenses.json', false) ]
-    allowedLicensesFile = new URL("https://raw.githubusercontent.com/th2-net/.github/main/license-compliance/gradle-license-report/allowed-licenses.json")
-}
+test.useJUnitPlatform()
+application.mainClass = "com.exactpro.th2.sim.run.SimulatorServerMain"
