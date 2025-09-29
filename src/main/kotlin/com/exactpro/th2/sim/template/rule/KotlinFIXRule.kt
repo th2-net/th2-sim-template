@@ -145,12 +145,12 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
             context.send(
                 fixNew.toBuilder()
-                    .addField(FixFields.EXEC_ID, execId.incrementAndGet())
+                    .addField(FixFields.EXEC_ID, execId.incrementAndGet().toString())
                     .with(sessionAlias = aliases[KEY_ALIAS_1])
             )
             context.send(
                 fixNew.toBuilder()
-                    .addField(FixFields.EXEC_ID, execId.incrementAndGet())
+                    .addField(FixFields.EXEC_ID, execId.incrementAndGet().toString())
                     .with(sessionAlias = aliases[KEY_DC_ALIAS_1])
             )
         } else synchronized(lock) {
@@ -224,7 +224,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 FixFields.PRICE to order2Price,
                 FixFields.LAST_PX to order2Price,
                 FixFields.ORDER_ID to secondBuyOrder.orderId,
-                FixFields.EXEC_ID to execId.incrementAndGet(),
+                FixFields.EXEC_ID to execId.incrementAndGet().toString(),
                 FixFields.TRD_MATCH_ID to tradeMatchId1
             ).build()
 
@@ -245,7 +245,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 FixFields.CUM_QTY to cumQty2,
                 FixFields.LAST_PX to firstBuyOrder.orderMessage.getField(FixFields.PRICE),
                 FixFields.ORDER_ID to firstBuyOrder.orderId,
-                FixFields.EXEC_ID to execId.incrementAndGet(),
+                FixFields.EXEC_ID to execId.incrementAndGet().toString(),
                 FixFields.TRD_MATCH_ID to tradeMatchId2,
             ).build()
 
@@ -283,7 +283,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 FixFields.LAST_PX to order2Price,
                 FixFields.CUM_QTY to cumQty1,
                 FixFields.LEAVES_QTY to sellOrder.orderMessage.getInt(FixFields.ORDER_QTY)!! - cumQty1,
-                FixFields.EXEC_ID to execId.incrementAndGet(),
+                FixFields.EXEC_ID to execId.incrementAndGet().toString(),
                 FixFields.TRD_MATCH_ID to tradeMatchId1,
             ).build()
 
@@ -298,7 +298,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             FixFields.LAST_PX to order1Price,
             FixFields.CUM_QTY to cumQty1 + cumQty2,
             FixFields.LEAVES_QTY to leavesQty2,
-            FixFields.EXEC_ID to execId.incrementAndGet(),
+            FixFields.EXEC_ID to execId.incrementAndGet().toString(),
             FixFields.TRD_MATCH_ID to tradeMatchId2,
         ).build()
 
@@ -328,7 +328,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                     FixFields.CUM_QTY to cumQty1 + cumQty2,
                     FixFields.ORDER_QTY to sellOrder.orderMessage.getString(FixFields.ORDER_QTY)!!,
                     FixFields.LEAVES_QTY to leavesQty2,
-                    FixFields.EXEC_ID to execId.incrementAndGet(),
+                    FixFields.EXEC_ID to execId.incrementAndGet().toString(),
                     FixFields.TRD_MATCH_ID to tradeMatchId2,
                     FixFields.TEXT to "Extra Execution Report"
                 )
@@ -345,7 +345,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 FixFields.CUM_QTY to cumQty1 + cumQty2,
                 FixFields.LEAVES_QTY to "0",
                 FixFields.ORDER_QTY to sellOrder.orderMessage.getString(FixFields.ORDER_QTY)!!,
-                FixFields.EXEC_ID to execId.incrementAndGet(),
+                FixFields.EXEC_ID to execId.incrementAndGet().toString(),
                 FixFields.TEXT to "The remaining part of simulated order has been expired"
             ).build()
         context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_2]))
