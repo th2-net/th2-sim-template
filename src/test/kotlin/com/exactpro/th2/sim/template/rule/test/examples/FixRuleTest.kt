@@ -83,13 +83,13 @@ class FixRuleTest {
                 assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
                     Assertions.assertEquals("ExecutionReport", message.type)
                     assertEquals(i + 1, message.bodyBuilder()[FixFields.ORDER_ID])
-                    assertEquals(2 * i + 1, message.bodyBuilder()[FixFields.EXEC_ID])
+                    assertEquals((2 * i + 1).toString(), message.bodyBuilder()[FixFields.EXEC_ID])
                 }
 
                 assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
                     Assertions.assertEquals("ExecutionReport", message.type)
                     assertEquals(i + 1, message.bodyBuilder()[FixFields.ORDER_ID])
-                    assertEquals(2 * i + 2, message.bodyBuilder()[FixFields.EXEC_ID])
+                    assertEquals((2 * i + 2).toString(), message.bodyBuilder()[FixFields.EXEC_ID])
                 }
 
                 assertNothingSent()
@@ -138,13 +138,13 @@ class FixRuleTest {
                 assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
                     Assertions.assertEquals("ExecutionReport", message.type)
                     assertEquals(i + 1, message.bodyBuilder()[FixFields.ORDER_ID])
-                    assertEquals(2 * i + 1, message.bodyBuilder()[FixFields.EXEC_ID])
+                    assertEquals((2 * i + 1).toString(), message.bodyBuilder()[FixFields.EXEC_ID])
                 }
 
                 assertSent(ParsedMessage.FromMapBuilder::class.java) { message ->
                     Assertions.assertEquals("ExecutionReport", message.type)
                     assertEquals(i + 1, message.bodyBuilder()[FixFields.ORDER_ID])
-                    assertEquals(2 * i + 2, message.bodyBuilder()[FixFields.EXEC_ID])
+                    assertEquals((2 * i + 2).toString(), message.bodyBuilder()[FixFields.EXEC_ID])
                 }
 
                 assertNothingSent()
