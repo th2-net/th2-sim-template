@@ -8,6 +8,9 @@ th2-common-utils = { group = "com.exactpro.th2", name = "common-utils", version 
 th2-sim = { group = "com.exactpro.th2", name = "sim", version = "7.1.0-dev" }
 th2-grpc-sim-template = { group = "com.exactpro.th2", name = "grpc-sim-template", version = "3.5.0-dev" }
 
+th2-junit-jupiter-integration = { group = "com.exactpro.th2", name = "junit-jupiter-integration", version = "0.1.0" }
+awaitility = { group = "org.awaitility", name = "awaitility", version = "4.3.0" }
+
 [plugins]
 th2-component = { id = "com.exactpro.th2.gradle.component", version.ref = "th2-plugin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
