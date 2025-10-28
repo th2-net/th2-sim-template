@@ -28,7 +28,7 @@ import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import com.exactpro.th2.sim.template.FixFields
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
@@ -78,6 +78,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
     // FIXME: rule should able to handle several instruments independently
     override fun handle(context: IRuleContext, incomeMessage: ParsedMessage) {
+        val now = Instant.now()
         if (!incomeMessage.containsField(FixFields.SIDE)) {
             context.send(
                 message("Reject")
@@ -134,7 +135,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                     FixFields.ORDER_CAPACITY,
                     FixFields.ACCOUNT_TYPE
                 ).addFields(
-                    FixFields.TRANSACT_TIME to LocalDateTime.now(),
+                    FixFields.TRANSACT_TIME to now,
                     FixFields.ORDER_ID to incomeOrderId,
                     FixFields.LEAVES_QTY to incomeMessage.getField(FixFields.ORDER_QTY)!!,
                     FixFields.TEXT to "Simulated New Order Buy is placed",
@@ -184,9 +185,6 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         // Generator ER
         // ER FF Order2 for Trader1
-        val transTime1 = LocalDateTime.now()
-        val transTime2 = LocalDateTime.now()
-
         val noPartyIdsTrader2Order3 = hashMapOf(
             FixFields.NO_PARTY_IDS to createNoPartyIds("DEMO-CONN2", "DEMOFIRM1")
         )
@@ -219,7 +217,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 FixFields.ORDER_QTY
             )
             .addFields(
-                FixFields.TRANSACT_TIME to transTime1,
+                FixFields.TRANSACT_TIME to now,
                 FixFields.CUM_QTY to cumQty1,
                 FixFields.PRICE to order2Price,
                 FixFields.LAST_PX to order2Price,
@@ -241,7 +239,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 FixFields.PRICE
             )
             .addFields(
-                FixFields.TRANSACT_TIME to transTime2,
+                FixFields.TRANSACT_TIME to now,
                 FixFields.CUM_QTY to cumQty2,
                 FixFields.LAST_PX to firstBuyOrder.orderMessage.getField(FixFields.PRICE),
                 FixFields.ORDER_ID to firstBuyOrder.orderId,
@@ -279,7 +277,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         val trader2Order3Er1 = trader2Order3.toBuilder()
             .addFields(
-                FixFields.TRANSACT_TIME to transTime1,
+                FixFields.TRANSACT_TIME to now,
                 FixFields.LAST_PX to order2Price,
                 FixFields.CUM_QTY to cumQty1,
                 FixFields.LEAVES_QTY to sellOrder.orderMessage.getInt(FixFields.ORDER_QTY)!! - cumQty1,
@@ -294,7 +292,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         // ER2 PF Order3 for Trader2
         val trader2Order3Er2 = trader2Order3.toBuilder().addFields(
-            FixFields.TRANSACT_TIME to transTime2,
+            FixFields.TRANSACT_TIME to now,
             FixFields.LAST_PX to order1Price,
             FixFields.CUM_QTY to cumQty1 + cumQty2,
             FixFields.LEAVES_QTY to leavesQty2,
@@ -320,7 +318,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             // Extra ER3 FF Order3 for Trader2 as testcase
             val trader2Order3fixX = trader2.toBuilder()
                 .addFields(
-                    FixFields.TRANSACT_TIME to transTime2,
+                    FixFields.TRANSACT_TIME to now,
                     FixFields.TRADING_PARTY to noPartyIdsTrader2Order3,
                     FixFields.EXEC_TYPE to "F",
                     FixFields.ORD_STATUS to "2",
@@ -339,7 +337,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         val trader2Order3Er3CC = trader2.toBuilder()
             .copyFields(sellOrder.orderMessage, FixFields.TRADING_PARTY)
             .addFields(
-                FixFields.TRANSACT_TIME to LocalDateTime.now(),
+                FixFields.TRANSACT_TIME to now,
                 FixFields.EXEC_TYPE to "C",
                 FixFields.ORD_STATUS to "C",
                 FixFields.CUM_QTY to cumQty1 + cumQty2,
