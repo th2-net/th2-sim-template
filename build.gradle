@@ -12,10 +12,11 @@ repositories {
 }
 
 dependencies {
+    api(libs.th2.grpc.sim.template)
     implementation(libs.th2.common)
     implementation(libs.th2.common.utils)
     implementation(libs.th2.sim)
-    api(libs.th2.grpc.sim.template)
+    implementation(libs.opencsv)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation("org.junit.jupiter:junit-jupiter")

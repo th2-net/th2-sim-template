@@ -66,6 +66,10 @@ import com.exactpro.th2.sim.template.FixFields.Companion.TRD_MATCH_ID
 import com.exactpro.th2.sim.template.FixValues.Companion.BUSINESS_REJECT_REASON_UNKNOWN_SECURITY
 import com.exactpro.th2.sim.template.FixValues.Companion.SESSION_REJECT_REASON_REQUIRED_TAG_MISSING
 import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_BUY
+import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_SELL
+import com.opencsv.CSVWriter
+import java.io.FileWriter
+import java.nio.file.Path
 import java.time.Instant
 import java.util.LinkedList
 import java.util.Queue
@@ -97,6 +101,18 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             matchId.set(0)
 
             books.clear()
+        }
+
+        private fun CsvWriter.writeOrder(action: Action, transactTime: Instant, orderId: String, order: ParsedMessage) {
+            with(order) {
+                val side = when(val orig = getString(SIDE)) {
+                    SIDE_BUY -> "BUY"
+                    SIDE_SELL -> "SELL"
+                    else -> orig
+                }
+                write(action, transactTime, getString(CL_ORD_ID), orderId, getString(SECURITY_ID),
+                    side, getString(PRICE), getString(ORDER_QTY))
+            }
         }
     }
 
@@ -473,5 +489,33 @@ private class Book {
 
     companion object {
         private fun calcQty(queue: Queue<BookRecord>): Int = queue.sumOf { it.order.body.getInt(ORDER_QTY)!! }
+    }
+}
+
+private enum class Action {
+    ADD,
+    DELETE,
+}
+
+private class CsvWriter(path: Path) {
+    private val writer = CSVWriter(FileWriter("output.csv"))
+
+    init {
+        writer.writeNext(arrayOf("Action", "TransactTime", "ClOrdID", "OrdID", "Instrument", "Side", "Price", "Qty"))
+        writer.flush()
+    }
+
+    fun write(
+        action: Action,
+        transactTime: Instant,
+        clOrdID: String?,
+        ordID: String,
+        instrument: String?,
+        side: String?,
+        price: String?,
+        qty: String?,
+    ) {
+        writer.writeNext(arrayOf(action.name, transactTime.toString(), clOrdID, ordID, instrument, side, price, qty))
+        writer.flush()
     }
 }
