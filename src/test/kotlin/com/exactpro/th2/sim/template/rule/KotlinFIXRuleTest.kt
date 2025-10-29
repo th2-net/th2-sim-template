@@ -22,6 +22,7 @@ import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.builders.M
 import com.exactpro.th2.common.utils.message.transport.addFields
 import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.template.FixFields.Companion.ACCOUNT_TYPE
+import com.exactpro.th2.sim.template.FixFields.Companion.AGGRESSOR_INDICATOR
 import com.exactpro.th2.sim.template.FixFields.Companion.BEGIN_STRING
 import com.exactpro.th2.sim.template.FixFields.Companion.BUSINESS_REJECT_REASON
 import com.exactpro.th2.sim.template.FixFields.Companion.BUSINESS_REJECT_REF_ID
@@ -401,7 +402,7 @@ class KotlinFIXRuleTest {
                     get { size } isEqualTo 5
                     get { get(REF_TAG_ID) } isEqualTo "453"
                     get { get(REF_MSG_TYPE) } isEqualTo "D"
-                    get { get(REF_SEQ_NUM) } isEqualTo (nos.body[HEADER] as Map<*,*>)[MSG_SEQ_NUM]
+                    get { get(REF_SEQ_NUM) } isEqualTo (nos.body[HEADER] as Map<*, *>)[MSG_SEQ_NUM]
                     get { get(TEXT) } isEqualTo "Simulating reject message"
                     get { get(SESSION_REJECT_REASON) } isEqualTo SESSION_REJECT_REASON_REQUIRED_TAG_MISSING
                 }
@@ -421,7 +422,7 @@ class KotlinFIXRuleTest {
                     get { size } isEqualTo 6
                     get { get(REF_TAG_ID) } isEqualTo "48"
                     get { get(REF_MSG_TYPE) } isEqualTo "D"
-                    get { get(REF_SEQ_NUM) } isEqualTo (nos.body[HEADER] as Map<*,*>)[MSG_SEQ_NUM]
+                    get { get(REF_SEQ_NUM) } isEqualTo (nos.body[HEADER] as Map<*, *>)[MSG_SEQ_NUM]
                     get { get(TEXT) } isEqualTo "Unknown SecurityID"
                     get { get(BUSINESS_REJECT_REASON) } isEqualTo BUSINESS_REJECT_REASON_UNKNOWN_SECURITY
                     get { get(BUSINESS_REJECT_REF_ID) } isEqualTo nos.body[CL_ORD_ID]
@@ -479,7 +480,7 @@ class KotlinFIXRuleTest {
                 }
                 get { type } isEqualTo EXECUTION_REPORT
                 get { bodyBuilder() } and {
-                    get { size } isEqualTo 16
+                    get { size } isEqualTo 17
                     (sell.body - NOT_COPIED_FIELD).forEach { (key, value) ->
                         get(key) { get(key).toString() } isEqualTo value.toString()
                     }
@@ -489,7 +490,7 @@ class KotlinFIXRuleTest {
                             sell.body[ORDER_QTY].toString().toInt()
                                     - buy1.body[ORDER_QTY].toString().toInt()
                                     - buy2.body[ORDER_QTY].toString().toInt()
-                    )
+                            )
                     get { get(TEXT) } isEqualTo "Extra Execution Report"
                     get { get(EXEC_TYPE) } isEqualTo EXEC_TYPE_TRADE
                     get { get(ORD_STATUS) } isEqualTo ORD_STATUS_FILLED
@@ -498,6 +499,7 @@ class KotlinFIXRuleTest {
                     get { get(EXEC_ID) } isEqualTo execId
                     get { get(LAST_PX) } isEqualTo buy1.body[PRICE].toString()
                     get { get(TRD_MATCH_ID) } isEqualTo matchId
+                    get { get(AGGRESSOR_INDICATOR) } isEqualTo "Y"
                     extractTradingParty("DEMO-CONN2", "DEMOFIRM1")
                 }
             }
@@ -517,7 +519,7 @@ class KotlinFIXRuleTest {
                 }
                 get { type } isEqualTo EXECUTION_REPORT
                 get { bodyBuilder() } and {
-                    get { size } isEqualTo 17
+                    get { size } isEqualTo 18
                     (nos.body - NOT_COPIED_FIELD).forEach { (key, value) ->
                         get(key) { get(key).toString() } isEqualTo value.toString()
                     }
@@ -532,6 +534,7 @@ class KotlinFIXRuleTest {
                     get { get(CUM_QTY) } isEqualTo nos.body[ORDER_QTY].toString().toInt()
                     get { get(EXEC_ID) } isEqualTo execId
                     get { get(TIME_IN_FORCE) } isEqualTo TIME_IN_FORCE_DAY
+                    get { get(AGGRESSOR_INDICATOR) } isEqualTo "N"
                     extractTradingParty("DEMO-CONN1", "DEMOFIRM2")
                 }
             }
@@ -596,7 +599,7 @@ class KotlinFIXRuleTest {
                 }
                 get { type } isEqualTo EXECUTION_REPORT
                 get { bodyBuilder() } and {
-                    get { size } isEqualTo 16
+                    get { size } isEqualTo 17
                     (sell.body - NOT_COPIED_FIELD).forEach { (key, value) ->
                         get(key) { get(key).toString() } isEqualTo value.toString()
                     }
@@ -612,6 +615,7 @@ class KotlinFIXRuleTest {
                     get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString()
                         .toInt() + (buy2?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
                     get { get(EXEC_ID) } isEqualTo execId
+                    get { get(AGGRESSOR_INDICATOR) } isEqualTo "Y"
                     extractTradingParty("DEMO-CONN2", "DEMOFIRM1")
                 }
             }
@@ -634,7 +638,7 @@ class KotlinFIXRuleTest {
                 }
                 get { type } isEqualTo EXECUTION_REPORT
                 get { bodyBuilder() } and {
-                    get { size } isEqualTo 18
+                    get { size } isEqualTo 19
                     (sell.body - NOT_COPIED_FIELD).forEach { (key, value) ->
                         get(key) { get(key).toString() } isEqualTo value.toString()
                     }
@@ -647,11 +651,13 @@ class KotlinFIXRuleTest {
                     get { get(EXEC_TYPE) } isEqualTo EXEC_TYPE_TRADE
                     get { get(ORD_STATUS) } isEqualTo ORD_STATUS_PARTIALLY_FILLED
                     get { get(LAST_PX).toString() } isEqualTo buy1.body[PRICE].toString()
-                    get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString()
-                        .toInt() + (buy2?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
+                    get { get(CUM_QTY) } isEqualTo (
+                            buy1.body[ORDER_QTY].toString().toInt() + (buy2?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
+                            )
                     get { get(EXEC_ID) } isEqualTo execId
                     get { get(ORDER_CAPACITY) } isEqualTo ORDER_CAPACITY_PRINCIPAL
                     get { get(ACCOUNT_TYPE) } isEqualTo ACCOUNT_TYPE_NON_CUSTOMER
+                    get { get(AGGRESSOR_INDICATOR) } isEqualTo "Y"
                     extractTradingParty("DEMO-CONN2", "DEMOFIRM1")
                 }
             }
