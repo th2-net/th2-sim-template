@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ class FixFields {
         const val TEXT = "Text"
 
         const val SESSION_REJECT_REASON = "SessionRejectReason"
+        const val HEADER = "header"
         const val SIDE = "Side"
         const val PRICE = "Price"
         const val CUM_QTY = "CumQty"

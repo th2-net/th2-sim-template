@@ -17,9 +17,14 @@ dependencies {
     implementation(libs.th2.sim)
     api(libs.th2.grpc.sim.template)
 
+    testImplementation(platform(libs.junit.bom))
+    testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation(libs.strikt.core)
     testImplementation testFixtures(libs.th2.common)
     testImplementation testFixtures(libs.th2.sim)
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 test.useJUnitPlatform()
