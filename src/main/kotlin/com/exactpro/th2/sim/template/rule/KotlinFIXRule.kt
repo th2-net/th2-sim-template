@@ -27,7 +27,41 @@ import com.exactpro.th2.common.utils.message.transport.getString
 import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
-import com.exactpro.th2.sim.template.FixFields
+import com.exactpro.th2.sim.template.FixFields.Companion.ACCOUNT_TYPE
+import com.exactpro.th2.sim.template.FixFields.Companion.AGGRESSOR_INDICATOR
+import com.exactpro.th2.sim.template.FixFields.Companion.BUSINESS_REJECT_REASON
+import com.exactpro.th2.sim.template.FixFields.Companion.BUSINESS_REJECT_REF_ID
+import com.exactpro.th2.sim.template.FixFields.Companion.CL_ORD_ID
+import com.exactpro.th2.sim.template.FixFields.Companion.CUM_QTY
+import com.exactpro.th2.sim.template.FixFields.Companion.EXEC_ID
+import com.exactpro.th2.sim.template.FixFields.Companion.EXEC_TYPE
+import com.exactpro.th2.sim.template.FixFields.Companion.HEADER
+import com.exactpro.th2.sim.template.FixFields.Companion.LAST_PX
+import com.exactpro.th2.sim.template.FixFields.Companion.LEAVES_QTY
+import com.exactpro.th2.sim.template.FixFields.Companion.MSG_SEQ_NUM
+import com.exactpro.th2.sim.template.FixFields.Companion.NO_PARTY_IDS
+import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_CAPACITY
+import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_ID
+import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_QTY
+import com.exactpro.th2.sim.template.FixFields.Companion.ORD_STATUS
+import com.exactpro.th2.sim.template.FixFields.Companion.ORD_TYPE
+import com.exactpro.th2.sim.template.FixFields.Companion.PARTY_ID
+import com.exactpro.th2.sim.template.FixFields.Companion.PARTY_ID_SOURCE
+import com.exactpro.th2.sim.template.FixFields.Companion.PARTY_ROLE
+import com.exactpro.th2.sim.template.FixFields.Companion.PRICE
+import com.exactpro.th2.sim.template.FixFields.Companion.REF_MSG_TYPE
+import com.exactpro.th2.sim.template.FixFields.Companion.REF_SEQ_NUM
+import com.exactpro.th2.sim.template.FixFields.Companion.REF_TAG_ID
+import com.exactpro.th2.sim.template.FixFields.Companion.SECONDARY_CL_ORD_ID
+import com.exactpro.th2.sim.template.FixFields.Companion.SECURITY_ID
+import com.exactpro.th2.sim.template.FixFields.Companion.SECURITY_ID_SOURCE
+import com.exactpro.th2.sim.template.FixFields.Companion.SESSION_REJECT_REASON
+import com.exactpro.th2.sim.template.FixFields.Companion.SIDE
+import com.exactpro.th2.sim.template.FixFields.Companion.TEXT
+import com.exactpro.th2.sim.template.FixFields.Companion.TIME_IN_FORCE
+import com.exactpro.th2.sim.template.FixFields.Companion.TRADING_PARTY
+import com.exactpro.th2.sim.template.FixFields.Companion.TRANSACT_TIME
+import com.exactpro.th2.sim.template.FixFields.Companion.TRD_MATCH_ID
 import java.time.Instant
 import java.util.LinkedList
 import java.util.Queue
@@ -77,36 +111,36 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
     override fun handle(context: IRuleContext, incomeMessage: ParsedMessage) {
         val now = Instant.now()
-        if (!incomeMessage.containsField(FixFields.SIDE)) {
+        if (!incomeMessage.containsField(SIDE)) {
             context.send(
                 message("Reject")
                     .addFields(
-                        FixFields.REF_TAG_ID to "453",
-                        FixFields.REF_MSG_TYPE to "D",
-                        FixFields.REF_SEQ_NUM to incomeMessage.getFieldSoft(
-                            FixFields.HEADER,
-                            FixFields.MSG_SEQ_NUM
+                        REF_TAG_ID to "453",
+                        REF_MSG_TYPE to "D",
+                        REF_SEQ_NUM to incomeMessage.getFieldSoft(
+                            HEADER,
+                            MSG_SEQ_NUM
                         ),
-                        FixFields.TEXT to "Simulating reject message",
-                        FixFields.SESSION_REJECT_REASON to "1"
+                        TEXT to "Simulating reject message",
+                        SESSION_REJECT_REASON to "1"
                     ).with(sessionAlias = incomeMessage.id.sessionAlias)
             )
             return
         }
 
-        val instrument = incomeMessage.getString(FixFields.SECURITY_ID)
+        val instrument = incomeMessage.getString(SECURITY_ID)
         if (instrument == null) {
             context.send(
                 message("Reject")
                     .addFields(
-                        FixFields.REF_TAG_ID to "48",
-                        FixFields.REF_MSG_TYPE to "D",
-                        FixFields.REF_SEQ_NUM to incomeMessage.getFieldSoft(
-                            FixFields.HEADER,
-                            FixFields.MSG_SEQ_NUM
+                        REF_TAG_ID to "48",
+                        REF_MSG_TYPE to "D",
+                        REF_SEQ_NUM to incomeMessage.getFieldSoft(
+                            HEADER,
+                            MSG_SEQ_NUM
                         ),
-                        FixFields.TEXT to "Simulating reject message",
-                        FixFields.SESSION_REJECT_REASON to "1"
+                        TEXT to "Simulating reject message",
+                        SESSION_REJECT_REASON to "1"
                     ).with(sessionAlias = incomeMessage.id.sessionAlias)
             )
             return
@@ -116,12 +150,12 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             context.send(
                 message("BusinessMessageReject")
                     .addFields(
-                        FixFields.REF_TAG_ID to "48",
-                        FixFields.REF_MSG_TYPE to "D",
-                        FixFields.REF_SEQ_NUM to incomeMessage.getFieldSoft("header", FixFields.MSG_SEQ_NUM),
-                        FixFields.TEXT to "Unknown SecurityID",
-                        FixFields.BUSINESS_REJECT_REASON to "2",
-                        FixFields.BUSINESS_REJECT_REF_ID to incomeMessage.getField(FixFields.CL_ORD_ID)
+                        REF_TAG_ID to "48",
+                        REF_MSG_TYPE to "D",
+                        REF_SEQ_NUM to incomeMessage.getFieldSoft("header", MSG_SEQ_NUM),
+                        TEXT to "Unknown SecurityID",
+                        BUSINESS_REJECT_REASON to "2",
+                        BUSINESS_REJECT_REF_ID to incomeMessage.getField(CL_ORD_ID)
                     ).with(sessionAlias = incomeMessage.id.sessionAlias)
             )
             return
@@ -129,42 +163,42 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         val incomeOrderId = orderId.incrementAndGet()
         val book = books.computeIfAbsent(instrument) { Book() }
-        if (incomeMessage.getInt(FixFields.SIDE) == 1) {
+        if (incomeMessage.getInt(SIDE) == 1) {
             book.addBuy(BookRecord(incomeOrderId, incomeMessage))
             val fixNew = message("ExecutionReport")
                 .copyFields(
                     incomeMessage,
-                    FixFields.SIDE,
-                    FixFields.PRICE,
-                    FixFields.CUM_QTY,
-                    FixFields.CL_ORD_ID,
-                    FixFields.SECONDARY_CL_ORD_ID,
-                    FixFields.SECURITY_ID,
-                    FixFields.SECURITY_ID_SOURCE,
-                    FixFields.ORD_TYPE,
-                    FixFields.ORDER_QTY,
-                    FixFields.TRADING_PARTY,
-                    FixFields.TIME_IN_FORCE,
-                    FixFields.ORDER_CAPACITY,
-                    FixFields.ACCOUNT_TYPE
+                    SIDE,
+                    PRICE,
+                    CUM_QTY,
+                    CL_ORD_ID,
+                    SECONDARY_CL_ORD_ID,
+                    SECURITY_ID,
+                    SECURITY_ID_SOURCE,
+                    ORD_TYPE,
+                    ORDER_QTY,
+                    TRADING_PARTY,
+                    TIME_IN_FORCE,
+                    ORDER_CAPACITY,
+                    ACCOUNT_TYPE
                 ).addFields(
-                    FixFields.TRANSACT_TIME to now,
-                    FixFields.ORDER_ID to incomeOrderId,
-                    FixFields.LEAVES_QTY to incomeMessage.getField(FixFields.ORDER_QTY)!!,
-                    FixFields.TEXT to "Simulated New Order Buy is placed",
-                    FixFields.EXEC_TYPE to "0",
-                    FixFields.ORD_STATUS to "0",
-                    FixFields.CUM_QTY to "0"
+                    TRANSACT_TIME to now,
+                    ORDER_ID to incomeOrderId,
+                    LEAVES_QTY to incomeMessage.getField(ORDER_QTY)!!,
+                    TEXT to "Simulated New Order Buy is placed",
+                    EXEC_TYPE to "0",
+                    ORD_STATUS to "0",
+                    CUM_QTY to "0"
                 ).build()
 
             context.send(
                 fixNew.toBuilder()
-                    .addField(FixFields.EXEC_ID, execId.incrementAndGet())
+                    .addField(EXEC_ID, execId.incrementAndGet())
                     .with(sessionAlias = aliases[KEY_ALIAS_1])
             )
             context.send(
                 fixNew.toBuilder()
-                    .addField(FixFields.EXEC_ID, execId.incrementAndGet())
+                    .addField(EXEC_ID, execId.incrementAndGet())
                     .with(sessionAlias = aliases[KEY_DC_ALIAS_1])
             )
         } else {
@@ -178,6 +212,36 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         book.withLock {
             if (buySize < 2 || sellIsEmpty) {
                 // we don't have enough orders for matching
+                if (!sellIsEmpty) {
+                    sellOrder = pullSell()
+                    val expired = message("ExecutionReport").copyFields(
+                        sellOrder.order,
+                        TIME_IN_FORCE,
+                        SIDE,
+                        PRICE,
+                        CL_ORD_ID,
+                        SECONDARY_CL_ORD_ID,
+                        SECURITY_ID,
+                        SECURITY_ID_SOURCE,
+                        ORD_TYPE,
+                        ORDER_CAPACITY,
+                        ACCOUNT_TYPE,
+                        TRADING_PARTY
+                    ).addFields(
+                        ORDER_ID to sellOrder.orderId,
+                        TRANSACT_TIME to now,
+                        EXEC_TYPE to "C",
+                        ORD_STATUS to "C",
+                        CUM_QTY to calcQtyBuy(),
+                        LEAVES_QTY to "0",
+                        ORDER_QTY to sellOrder.order.getString(ORDER_QTY)!!,
+                        EXEC_ID to execId.incrementAndGet(),
+                        TEXT to "The remaining part of simulated order has been expired"
+                    ).build()
+                    context.send(expired.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_2]))
+                    //DropCopy
+                    context.send(expired.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_2]))
+                }
                 return
             }
             // Useful variables for buy-side
@@ -186,11 +250,11 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             secondBuyOrder = pullBuy()
         }
 
-        val cumQty1 = secondBuyOrder.order.getInt(FixFields.ORDER_QTY)!!
-        val cumQty2 = firstBuyOrder.order.getInt(FixFields.ORDER_QTY)!!
-        val leavesQty2 = sellOrder.order.getInt(FixFields.ORDER_QTY)!! - (cumQty1 + cumQty2)
-        val order1Price = firstBuyOrder.order.getString(FixFields.PRICE)!!
-        val order2Price = secondBuyOrder.order.getString(FixFields.PRICE)!!
+        val cumQty1 = secondBuyOrder.order.getInt(ORDER_QTY)!!
+        val cumQty2 = firstBuyOrder.order.getInt(ORDER_QTY)!!
+        val leavesQty2 = sellOrder.order.getInt(ORDER_QTY)!! - (cumQty1 + cumQty2)
+        val order1Price = firstBuyOrder.order.getString(PRICE)!!
+        val order2Price = secondBuyOrder.order.getString(PRICE)!!
 
         val tradeMatchId1 = matchId.incrementAndGet()
         val tradeMatchId2 = matchId.incrementAndGet()
@@ -198,45 +262,45 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         // Generator ER
         // ER FF Order2 for Trader1
         val noPartyIdsTrader2Order3 = hashMapOf(
-            FixFields.NO_PARTY_IDS to createNoPartyIds("DEMO-CONN2", "DEMOFIRM1")
+            NO_PARTY_IDS to createNoPartyIds("DEMO-CONN2", "DEMOFIRM1")
         )
 
         val trader1 = message("ExecutionReport")
             .copyFields(
                 sellOrder.order,
-                FixFields.SECURITY_ID,
-                FixFields.SECURITY_ID_SOURCE,
-                FixFields.ORD_TYPE,
-                FixFields.ORDER_CAPACITY,
-                FixFields.ACCOUNT_TYPE
+                SECURITY_ID,
+                SECURITY_ID_SOURCE,
+                ORD_TYPE,
+                ORDER_CAPACITY,
+                ACCOUNT_TYPE
             ).addFields(
-                FixFields.TRADING_PARTY to hashMapOf(
-                    FixFields.NO_PARTY_IDS to createNoPartyIds("DEMO-CONN1", "DEMOFIRM2")
+                TRADING_PARTY to hashMapOf(
+                    NO_PARTY_IDS to createNoPartyIds("DEMO-CONN1", "DEMOFIRM2")
                 ),
-                FixFields.SIDE to "1",
-                FixFields.TIME_IN_FORCE to "0",  // Get from message?
-                FixFields.EXEC_TYPE to "F",
-                FixFields.AGGRESSOR_INDICATOR to "N",
-                FixFields.ORD_STATUS to "2",
-                FixFields.LEAVES_QTY to 0,
-                FixFields.TEXT to "The simulated order has been fully traded"
+                SIDE to "1",
+                TIME_IN_FORCE to "0",  // Get from message?
+                EXEC_TYPE to "F",
+                AGGRESSOR_INDICATOR to "N",
+                ORD_STATUS to "2",
+                LEAVES_QTY to 0,
+                TEXT to "The simulated order has been fully traded"
             ).build()
 
         val trader1Order2 = trader1.toBuilder()
             .copyFields(
                 secondBuyOrder.order,
-                FixFields.CL_ORD_ID,
-                FixFields.SECONDARY_CL_ORD_ID,
-                FixFields.ORDER_QTY
+                CL_ORD_ID,
+                SECONDARY_CL_ORD_ID,
+                ORDER_QTY
             )
             .addFields(
-                FixFields.TRANSACT_TIME to now,
-                FixFields.CUM_QTY to cumQty1,
-                FixFields.PRICE to order2Price,
-                FixFields.LAST_PX to order2Price,
-                FixFields.ORDER_ID to secondBuyOrder.orderId,
-                FixFields.EXEC_ID to execId.incrementAndGet(),
-                FixFields.TRD_MATCH_ID to tradeMatchId1
+                TRANSACT_TIME to now,
+                CUM_QTY to cumQty1,
+                PRICE to order2Price,
+                LAST_PX to order2Price,
+                ORDER_ID to secondBuyOrder.orderId,
+                EXEC_ID to execId.incrementAndGet(),
+                TRD_MATCH_ID to tradeMatchId1
             ).build()
 
         context.send(trader1Order2.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_1]))
@@ -246,18 +310,18 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         val trader1Order1 = trader1.toBuilder()
             .copyFields(
                 firstBuyOrder.order,
-                FixFields.CL_ORD_ID,
-                FixFields.SECONDARY_CL_ORD_ID,
-                FixFields.ORDER_QTY,
-                FixFields.PRICE
+                CL_ORD_ID,
+                SECONDARY_CL_ORD_ID,
+                ORDER_QTY,
+                PRICE
             )
             .addFields(
-                FixFields.TRANSACT_TIME to now,
-                FixFields.CUM_QTY to cumQty2,
-                FixFields.LAST_PX to firstBuyOrder.order.getField(FixFields.PRICE),
-                FixFields.ORDER_ID to firstBuyOrder.orderId,
-                FixFields.EXEC_ID to execId.incrementAndGet(),
-                FixFields.TRD_MATCH_ID to tradeMatchId2,
+                TRANSACT_TIME to now,
+                CUM_QTY to cumQty2,
+                LAST_PX to firstBuyOrder.order.getField(PRICE),
+                ORDER_ID to firstBuyOrder.orderId,
+                EXEC_ID to execId.incrementAndGet(),
+                TRD_MATCH_ID to tradeMatchId2,
             ).build()
 
         context.send(trader1Order1.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_1]))
@@ -265,38 +329,38 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         val trader2 = message("ExecutionReport").copyFields(
             sellOrder.order,
-            FixFields.TIME_IN_FORCE,
-            FixFields.SIDE,
-            FixFields.PRICE,
-            FixFields.CL_ORD_ID,
-            FixFields.SECONDARY_CL_ORD_ID,
-            FixFields.SECURITY_ID,
-            FixFields.SECURITY_ID_SOURCE,
-            FixFields.ORD_TYPE,
-            FixFields.ORDER_CAPACITY,
-            FixFields.ACCOUNT_TYPE
+            TIME_IN_FORCE,
+            SIDE,
+            PRICE,
+            CL_ORD_ID,
+            SECONDARY_CL_ORD_ID,
+            SECURITY_ID,
+            SECURITY_ID_SOURCE,
+            ORD_TYPE,
+            ORDER_CAPACITY,
+            ACCOUNT_TYPE
         ).addFields(
-            FixFields.ORDER_ID to sellOrder.orderId
+            ORDER_ID to sellOrder.orderId
         ).build()
 
         val trader2Order3 = trader2.toBuilder()
             .addFields(
-                FixFields.TRADING_PARTY to noPartyIdsTrader2Order3,
-                FixFields.EXEC_TYPE to "F",
-                FixFields.AGGRESSOR_INDICATOR to "Y",
-                FixFields.ORD_STATUS to "1",
-                FixFields.ORDER_QTY to sellOrder.order.getString(FixFields.ORDER_QTY)!!,
-                FixFields.TEXT to "The simulated order has been partially traded"
+                TRADING_PARTY to noPartyIdsTrader2Order3,
+                EXEC_TYPE to "F",
+                AGGRESSOR_INDICATOR to "Y",
+                ORD_STATUS to "1",
+                ORDER_QTY to sellOrder.order.getString(ORDER_QTY)!!,
+                TEXT to "The simulated order has been partially traded"
             ).build()
 
         val trader2Order3Er1 = trader2Order3.toBuilder()
             .addFields(
-                FixFields.TRANSACT_TIME to now,
-                FixFields.LAST_PX to order2Price,
-                FixFields.CUM_QTY to cumQty1,
-                FixFields.LEAVES_QTY to sellOrder.order.getInt(FixFields.ORDER_QTY)!! - cumQty1,
-                FixFields.EXEC_ID to execId.incrementAndGet(),
-                FixFields.TRD_MATCH_ID to tradeMatchId1,
+                TRANSACT_TIME to now,
+                LAST_PX to order2Price,
+                CUM_QTY to cumQty1,
+                LEAVES_QTY to sellOrder.order.getInt(ORDER_QTY)!! - cumQty1,
+                EXEC_ID to execId.incrementAndGet(),
+                TRD_MATCH_ID to tradeMatchId1,
             ).build()
 
         // ER1 PF Order3 for Trader2
@@ -306,21 +370,21 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         // ER2 PF Order3 for Trader2
         val trader2Order3Er2 = trader2Order3.toBuilder().addFields(
-            FixFields.TRANSACT_TIME to now,
-            FixFields.LAST_PX to order1Price,
-            FixFields.CUM_QTY to cumQty1 + cumQty2,
-            FixFields.LEAVES_QTY to leavesQty2,
-            FixFields.EXEC_ID to execId.incrementAndGet(),
-            FixFields.TRD_MATCH_ID to tradeMatchId2,
+            TRANSACT_TIME to now,
+            LAST_PX to order1Price,
+            CUM_QTY to cumQty1 + cumQty2,
+            LEAVES_QTY to leavesQty2,
+            EXEC_ID to execId.incrementAndGet(),
+            TRD_MATCH_ID to tradeMatchId2,
         ).build()
 
         context.send(trader2Order3Er2.toBuilder().apply {
             with(sessionAlias = aliases[KEY_ALIAS_2])
             if (instrument == "INSTR5") {
                 addFields(
-                    FixFields.TEXT to "Execution Report with incorrect value in OrdStatus tag",
-                    FixFields.ORDER_CAPACITY to "P",  // Incorrect value as testcase
-                    FixFields.ACCOUNT_TYPE to "2"     // Incorrect value as testcase
+                    TEXT to "Execution Report with incorrect value in OrdStatus tag",
+                    ORDER_CAPACITY to "P",  // Incorrect value as testcase
+                    ACCOUNT_TYPE to "2"     // Incorrect value as testcase
                 )
             }
         })
@@ -332,34 +396,34 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             // Extra ER3 FF Order3 for Trader2 as testcase
             val trader2Order3fixX = trader2.toBuilder()
                 .addFields(
-                    FixFields.TRANSACT_TIME to now,
-                    FixFields.TRADING_PARTY to noPartyIdsTrader2Order3,
-                    FixFields.EXEC_TYPE to "F",
-                    FixFields.AGGRESSOR_INDICATOR to "Y",
-                    FixFields.ORD_STATUS to "2",
-                    FixFields.LAST_PX to order1Price,
-                    FixFields.CUM_QTY to cumQty1 + cumQty2,
-                    FixFields.ORDER_QTY to sellOrder.order.getString(FixFields.ORDER_QTY)!!,
-                    FixFields.LEAVES_QTY to leavesQty2,
-                    FixFields.EXEC_ID to execId.incrementAndGet(),
-                    FixFields.TRD_MATCH_ID to tradeMatchId2,
-                    FixFields.TEXT to "Extra Execution Report"
+                    TRANSACT_TIME to now,
+                    TRADING_PARTY to noPartyIdsTrader2Order3,
+                    EXEC_TYPE to "F",
+                    AGGRESSOR_INDICATOR to "Y",
+                    ORD_STATUS to "2",
+                    LAST_PX to order1Price,
+                    CUM_QTY to cumQty1 + cumQty2,
+                    ORDER_QTY to sellOrder.order.getString(ORDER_QTY)!!,
+                    LEAVES_QTY to leavesQty2,
+                    EXEC_ID to execId.incrementAndGet(),
+                    TRD_MATCH_ID to tradeMatchId2,
+                    TEXT to "Extra Execution Report"
                 )
             context.send(trader2Order3fixX.with(sessionAlias = aliases[KEY_ALIAS_2]))
         }
 
         // ER3 CC Order3 for Trader2
         val trader2Order3Er3CC = trader2.toBuilder()
-            .copyFields(sellOrder.order, FixFields.TRADING_PARTY)
+            .copyFields(sellOrder.order, TRADING_PARTY)
             .addFields(
-                FixFields.TRANSACT_TIME to now,
-                FixFields.EXEC_TYPE to "C",
-                FixFields.ORD_STATUS to "C",
-                FixFields.CUM_QTY to cumQty1 + cumQty2,
-                FixFields.LEAVES_QTY to "0",
-                FixFields.ORDER_QTY to sellOrder.order.getString(FixFields.ORDER_QTY)!!,
-                FixFields.EXEC_ID to execId.incrementAndGet(),
-                FixFields.TEXT to "The remaining part of simulated order has been expired"
+                TRANSACT_TIME to now,
+                EXEC_TYPE to "C",
+                ORD_STATUS to "C",
+                CUM_QTY to cumQty1 + cumQty2,
+                LEAVES_QTY to "0",
+                ORDER_QTY to sellOrder.order.getString(ORDER_QTY)!!,
+                EXEC_ID to execId.incrementAndGet(),
+                TEXT to "The remaining part of simulated order has been expired"
             ).build()
         context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_2]))
         //DropCopy
@@ -376,9 +440,9 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
     private fun createParty(partyRole: String, partyID: String, partyIDSource: String): Map<String, Any> =
         hashMapOf(
-            FixFields.PARTY_ROLE to partyRole,
-            FixFields.PARTY_ID to partyID,
-            FixFields.PARTY_ID_SOURCE to partyIDSource,
+            PARTY_ROLE to partyRole,
+            PARTY_ID to partyID,
+            PARTY_ID_SOURCE to partyIDSource,
         )
 
     private fun ParsedMessage.FromMapBuilder.with(sessionAlias: String? = null): ParsedMessage.FromMapBuilder = apply {
@@ -414,9 +478,17 @@ private class Book {
     fun pullBuy(): BookRecord = lock.withLock { buy.remove() }
     fun pullSell(): BookRecord = lock.withLock { sell.remove() }
 
+    fun calcQtyBuy(): Int = lock.withLock { calcQty(buy) }
+
+    fun calcQtySell(): Int = lock.withLock { calcQty(sell) }
+
     @OptIn(ExperimentalContracts::class)
     inline fun withLock(func: Book.() -> Unit) {
         contract { callsInPlace(func, InvocationKind.EXACTLY_ONCE) }
         lock.withLock { func() }
+    }
+
+    companion object {
+        private fun calcQty(queue: Queue<BookRecord>): Int = queue.sumOf { it.order.body.getInt(ORDER_QTY)!! }
     }
 }

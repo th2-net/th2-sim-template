@@ -153,6 +153,38 @@ class KotlinFIXRuleTest {
     }
 
     @Test
+    fun `one buy two sell for test-security test`() {
+        testRule {
+            KotlinFIXRule.reset()
+
+            val buy1 = buildMessage(SIDE_BUY, "test-security")
+            val sell1 = buildMessage(SIDE_SELL, "test-security")
+            val sell2 = buildMessage(SIDE_SELL, "test-security")
+            rule.assertHandle(sell1)
+            rule.assertHandle(buy1)
+            rule.assertHandle(sell2)
+
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell1, null, null, msg, ALIAS_2, orderId = 1, execId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell1, null, null, msg, DC_ALIAS_2, orderId = 1, execId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy1, msg, ALIAS_1, orderId = 2, execId = 2) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectNewBuyIsPlaced(buy1, msg, DC_ALIAS_1, orderId = 2, execId = 3) // execId looks as bag
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell2, buy1, null, msg, ALIAS_2, orderId = 3, execId = 4)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell2, buy1, null, msg, DC_ALIAS_2, orderId = 3, execId = 4)
+            }
+            assertNothingSent()
+        }
+    }
+
+    @Test
     fun `two buy one sell for two security ids test`() {
         testRule {
             KotlinFIXRule.reset()
@@ -528,8 +560,8 @@ class KotlinFIXRuleTest {
         @Suppress("SameParameterValue")
         private fun expectOrderExpired(
             sell: ParsedMessage,
-            buy1: ParsedMessage,
-            buy2: ParsedMessage,
+            buy1: ParsedMessage?,
+            buy2: ParsedMessage?,
             er: ParsedMessage.FromMapBuilder,
             alias: String,
             orderId: Int,
@@ -551,8 +583,10 @@ class KotlinFIXRuleTest {
                     get { get(TEXT) } isEqualTo "The remaining part of simulated order has been expired"
                     get { get(EXEC_TYPE) } isEqualTo EXEC_TYPE_EXPIRED
                     get { get(ORD_STATUS) } isEqualTo ORD_STATUS_EXPIRED
-                    get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString()
-                        .toInt() + buy2.body[ORDER_QTY].toString().toInt()
+                    get { get(CUM_QTY) } isEqualTo (
+                            (buy1?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
+                                    + (buy2?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
+                            )
                     get { get(EXEC_ID) } isEqualTo execId
                 }
             }
