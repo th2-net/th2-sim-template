@@ -23,6 +23,7 @@ import com.exactpro.th2.common.utils.message.transport.addFields
 import com.exactpro.th2.common.utils.message.transport.message
 import com.exactpro.th2.sim.template.FixFields.Companion.ACCOUNT_TYPE
 import com.exactpro.th2.sim.template.FixFields.Companion.BEGIN_STRING
+import com.exactpro.th2.sim.template.FixFields.Companion.BUSINESS_REJECT_REASON
 import com.exactpro.th2.sim.template.FixFields.Companion.BUSINESS_REJECT_REF_ID
 import com.exactpro.th2.sim.template.FixFields.Companion.CL_ORD_ID
 import com.exactpro.th2.sim.template.FixFields.Companion.CUM_QTY
@@ -53,6 +54,7 @@ import com.exactpro.th2.sim.template.FixFields.Companion.TRADING_PARTY
 import com.exactpro.th2.sim.template.FixFields.Companion.TRANSACT_TIME
 import com.exactpro.th2.sim.template.FixFields.Companion.TRD_MATCH_ID
 import com.exactpro.th2.sim.template.FixValues.Companion.ACCOUNT_TYPE_NON_CUSTOMER
+import com.exactpro.th2.sim.template.FixValues.Companion.BUSINESS_REJECT_REASON_UNKNOWN_SECURITY
 import com.exactpro.th2.sim.template.FixValues.Companion.EXEC_TYPE_EXPIRED
 import com.exactpro.th2.sim.template.FixValues.Companion.EXEC_TYPE_NEW
 import com.exactpro.th2.sim.template.FixValues.Companion.EXEC_TYPE_TRADE
@@ -73,8 +75,10 @@ import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_BUY
 import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_SELL
 import com.exactpro.th2.sim.template.FixValues.Companion.TIME_IN_FORCE_DAY
 import com.exactpro.th2.sim.template.rule.test.api.TestRuleContext.Companion.testRule
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import strikt.api.Assertion
 import strikt.api.expectThat
 import strikt.assertions.isA
@@ -82,7 +86,6 @@ import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
 import java.time.Instant
 import kotlin.random.Random
-import kotlin.test.assertEquals
 
 class KotlinFIXRuleTest {
 
@@ -170,8 +173,8 @@ class KotlinFIXRuleTest {
     }
 
     @Test
+    @DisplayName("test to check response of message with field SecurityID = INSTR4 and side = 1/2")
     fun `two buy one sell for INSTR4 test`() {
-        // test to check response of message with field SecurityID = INSTR4 and side = 1/2
         testRule {
             KotlinFIXRule.reset()
 
@@ -235,8 +238,8 @@ class KotlinFIXRuleTest {
     }
 
     @Test
+    @DisplayName("test to check response of message with field SecurityID = INSTR5 and side = 1/2")
     fun `two buy one sell for INSTR5 test`() {
-        // test to check response of message with field SecurityID = INSTR5 and side = 1/2
         testRule {
             KotlinFIXRule.reset()
 
@@ -296,25 +299,20 @@ class KotlinFIXRuleTest {
         }
     }
 
-    @Test
-    fun `INSTR6 test`() {
-        // test to check response of message with field SecurityID = INSTR6
+    @ParameterizedTest
+    @ValueSource(strings = [SIDE_SELL, SIDE_BUY])
+    @DisplayName("test to check response of message with field SecurityID = INSTR6")
+    fun `nos for INSTR6 test`(side: String) {
         testRule {
             KotlinFIXRule.reset()
 
             val nos = buildMessage {
-                addFields(
-                    SIDE to SIDE_SELL,
-                    SECURITY_ID to INSTR6,
-                )
+                addField(SIDE, side)
+                addField(SECURITY_ID, INSTR6)
             }
             rule.assertHandle(nos)
-
-            assertSent(BUILDER_CLASS) { message ->
-                Assertions.assertEquals("BusinessMessageReject", message.type)
-                assertEquals(nos.body[CL_ORD_ID], message.bodyBuilder()[BUSINESS_REJECT_REF_ID])
-                assertEquals((nos.body[HEADER] as Map<*, *>)[MSG_SEQ_NUM], message.bodyBuilder()[REF_SEQ_NUM])
-            }
+            assertSent(BUILDER_CLASS) { msg -> expectBMRejected(nos, msg) }
+            assertNothingSent()
         }
     }
 
@@ -329,6 +327,7 @@ class KotlinFIXRuleTest {
         private const val DC_ALIAS_2 = "DC_ALIAS_2"
 
         private const val EXECUTION_REPORT = "ExecutionReport"
+        private const val BUSINESS_MESSAGE_REJECT = "BusinessMessageReject"
         private const val REJECT = "Reject"
 
         private const val TRIGGER_FIELD = "check"
@@ -405,6 +404,27 @@ class KotlinFIXRuleTest {
                     get { get(REF_SEQ_NUM) } isEqualTo (nos.body[HEADER] as Map<*,*>)[MSG_SEQ_NUM]
                     get { get(TEXT) } isEqualTo "Simulating reject message"
                     get { get(SESSION_REJECT_REASON) } isEqualTo SESSION_REJECT_REASON_REQUIRED_TAG_MISSING
+                }
+            }
+        }
+
+        private fun expectBMRejected(
+            nos: ParsedMessage,
+            r: ParsedMessage.FromMapBuilder,
+        ) {
+            expectThat(r) {
+                get { idBuilder() } and {
+                    get { sessionAlias } isEqualTo nos.id.sessionAlias
+                }
+                get { type } isEqualTo BUSINESS_MESSAGE_REJECT
+                get { bodyBuilder() } and {
+                    get { size } isEqualTo 6
+                    get { get(REF_TAG_ID) } isEqualTo "48"
+                    get { get(REF_MSG_TYPE) } isEqualTo "D"
+                    get { get(REF_SEQ_NUM) } isEqualTo (nos.body[HEADER] as Map<*,*>)[MSG_SEQ_NUM]
+                    get { get(TEXT) } isEqualTo "Unknown SecurityID"
+                    get { get(BUSINESS_REJECT_REASON) } isEqualTo BUSINESS_REJECT_REASON_UNKNOWN_SECURITY
+                    get { get(BUSINESS_REJECT_REF_ID) } isEqualTo nos.body[CL_ORD_ID]
                 }
             }
         }

@@ -36,6 +36,7 @@ class FixValues {
         const val PARTY_ID_SOURCE_PROPRIETARY_CUSTOM_CODE = "D"
         const val PARTY_ID_SOURCE_SHORT_CODE_IDENTIFIER = "P"
         const val SESSION_REJECT_REASON_REQUIRED_TAG_MISSING = "1"
+        const val BUSINESS_REJECT_REASON_UNKNOWN_SECURITY = "2"
         const val ORDER_CAPACITY_PRINCIPAL = "P"
         const val ACCOUNT_TYPE_NON_CUSTOMER = "2"
     }
