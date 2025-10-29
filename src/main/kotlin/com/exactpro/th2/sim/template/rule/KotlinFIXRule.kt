@@ -29,9 +29,15 @@ import com.exactpro.th2.sim.rule.IRuleContext
 import com.exactpro.th2.sim.rule.impl.MessageCompareRule
 import com.exactpro.th2.sim.template.FixFields
 import java.time.Instant
+import java.util.LinkedList
 import java.util.Queue
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, String>) : MessageCompareRule() {
 
@@ -43,25 +49,18 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         private val orderId = AtomicInteger(0)
         private val execId = AtomicInteger(0)
-        private val TrdMatchId = AtomicInteger(0)
+        private val matchId = AtomicInteger(0)
 
-        private val lock = Any()
-        private val buyOrdersAndIds: Queue<OrderWithId> = ConcurrentLinkedQueue()
-        private val sellOrdersAndIds: Queue<OrderWithId> = ConcurrentLinkedQueue()
+        private val books = ConcurrentHashMap<String, Book>()
 
         fun reset() {
             orderId.set(0)
             execId.set(0)
-            TrdMatchId.set(0)
+            matchId.set(0)
 
-            synchronized(lock) {
-                buyOrdersAndIds.clear()
-                sellOrdersAndIds.clear()
-            }
+            books.clear()
         }
     }
-
-    private class OrderWithId(val orderMessage: ParsedMessage, val orderId: Int)
 
     private val aliases: Map<String, String>
 
@@ -76,7 +75,6 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         }
     }
 
-    // FIXME: rule should able to handle several instruments independently
     override fun handle(context: IRuleContext, incomeMessage: ParsedMessage) {
         val now = Instant.now()
         if (!incomeMessage.containsField(FixFields.SIDE)) {
@@ -96,7 +94,23 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             return
         }
 
-        val instrument = incomeMessage.getField(FixFields.SECURITY_ID)
+        val instrument = incomeMessage.getString(FixFields.SECURITY_ID)
+        if (instrument == null) {
+            context.send(
+                message("Reject")
+                    .addFields(
+                        FixFields.REF_TAG_ID to "48",
+                        FixFields.REF_MSG_TYPE to "D",
+                        FixFields.REF_SEQ_NUM to incomeMessage.getFieldSoft(
+                            FixFields.HEADER,
+                            FixFields.MSG_SEQ_NUM
+                        ),
+                        FixFields.TEXT to "Simulating reject message",
+                        FixFields.SESSION_REJECT_REASON to "1"
+                    ).with(sessionAlias = incomeMessage.id.sessionAlias)
+            )
+            return
+        }
 
         if (instrument == "INSTR6") {
             context.send(
@@ -114,10 +128,9 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         }
 
         val incomeOrderId = orderId.incrementAndGet()
+        val book = books.computeIfAbsent(instrument) { Book() }
         if (incomeMessage.getInt(FixFields.SIDE) == 1) {
-            synchronized(lock) {
-                buyOrdersAndIds.add(OrderWithId(incomeMessage, incomeOrderId))
-            }
+            book.addBuy(BookRecord(incomeOrderId, incomeMessage))
             val fixNew = message("ExecutionReport")
                 .copyFields(
                     incomeMessage,
@@ -154,34 +167,33 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                     .addField(FixFields.EXEC_ID, execId.incrementAndGet())
                     .with(sessionAlias = aliases[KEY_DC_ALIAS_1])
             )
-        } else synchronized(lock) {
-            sellOrdersAndIds.add(OrderWithId(incomeMessage, incomeOrderId))
+        } else {
+            book.addSell(BookRecord(incomeOrderId, incomeMessage))
         }
 
-        val sellOrder: OrderWithId
-        val firstBuyOrder: OrderWithId
-        val secondBuyOrder: OrderWithId
+        val sellOrder: BookRecord
+        val firstBuyOrder: BookRecord
+        val secondBuyOrder: BookRecord
 
-        synchronized(lock) {
-            if (buyOrdersAndIds.size < 2 || sellOrdersAndIds.isEmpty()) {
+        book.withLock {
+            if (buySize < 2 || sellIsEmpty) {
                 // we don't have enough orders for matching
                 return
             }
-
             // Useful variables for buy-side
-            sellOrder = sellOrdersAndIds.remove()
-            firstBuyOrder = buyOrdersAndIds.remove()
-            secondBuyOrder = buyOrdersAndIds.remove()
+            sellOrder = pullSell()
+            firstBuyOrder = pullBuy()
+            secondBuyOrder = pullBuy()
         }
 
-        val cumQty1 = secondBuyOrder.orderMessage.getInt(FixFields.ORDER_QTY)!!
-        val cumQty2 = firstBuyOrder.orderMessage.getInt(FixFields.ORDER_QTY)!!
-        val leavesQty2 = sellOrder.orderMessage.getInt(FixFields.ORDER_QTY)!! - (cumQty1 + cumQty2)
-        val order1Price = firstBuyOrder.orderMessage.getString(FixFields.PRICE)!!
-        val order2Price = secondBuyOrder.orderMessage.getString(FixFields.PRICE)!!
+        val cumQty1 = secondBuyOrder.order.getInt(FixFields.ORDER_QTY)!!
+        val cumQty2 = firstBuyOrder.order.getInt(FixFields.ORDER_QTY)!!
+        val leavesQty2 = sellOrder.order.getInt(FixFields.ORDER_QTY)!! - (cumQty1 + cumQty2)
+        val order1Price = firstBuyOrder.order.getString(FixFields.PRICE)!!
+        val order2Price = secondBuyOrder.order.getString(FixFields.PRICE)!!
 
-        val tradeMatchId1 = TrdMatchId.incrementAndGet()
-        val tradeMatchId2 = TrdMatchId.incrementAndGet()
+        val tradeMatchId1 = matchId.incrementAndGet()
+        val tradeMatchId2 = matchId.incrementAndGet()
 
         // Generator ER
         // ER FF Order2 for Trader1
@@ -191,7 +203,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         val trader1 = message("ExecutionReport")
             .copyFields(
-                sellOrder.orderMessage,
+                sellOrder.order,
                 FixFields.SECURITY_ID,
                 FixFields.SECURITY_ID_SOURCE,
                 FixFields.ORD_TYPE,
@@ -212,7 +224,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         val trader1Order2 = trader1.toBuilder()
             .copyFields(
-                secondBuyOrder.orderMessage,
+                secondBuyOrder.order,
                 FixFields.CL_ORD_ID,
                 FixFields.SECONDARY_CL_ORD_ID,
                 FixFields.ORDER_QTY
@@ -233,7 +245,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         // ER FF Order1 for Trader1
         val trader1Order1 = trader1.toBuilder()
             .copyFields(
-                firstBuyOrder.orderMessage,
+                firstBuyOrder.order,
                 FixFields.CL_ORD_ID,
                 FixFields.SECONDARY_CL_ORD_ID,
                 FixFields.ORDER_QTY,
@@ -242,7 +254,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             .addFields(
                 FixFields.TRANSACT_TIME to now,
                 FixFields.CUM_QTY to cumQty2,
-                FixFields.LAST_PX to firstBuyOrder.orderMessage.getField(FixFields.PRICE),
+                FixFields.LAST_PX to firstBuyOrder.order.getField(FixFields.PRICE),
                 FixFields.ORDER_ID to firstBuyOrder.orderId,
                 FixFields.EXEC_ID to execId.incrementAndGet(),
                 FixFields.TRD_MATCH_ID to tradeMatchId2,
@@ -252,7 +264,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         context.send(trader1Order1.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_1]))
 
         val trader2 = message("ExecutionReport").copyFields(
-            sellOrder.orderMessage,
+            sellOrder.order,
             FixFields.TIME_IN_FORCE,
             FixFields.SIDE,
             FixFields.PRICE,
@@ -273,7 +285,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 FixFields.EXEC_TYPE to "F",
                 FixFields.AGGRESSOR_INDICATOR to "Y",
                 FixFields.ORD_STATUS to "1",
-                FixFields.ORDER_QTY to sellOrder.orderMessage.getString(FixFields.ORDER_QTY)!!,
+                FixFields.ORDER_QTY to sellOrder.order.getString(FixFields.ORDER_QTY)!!,
                 FixFields.TEXT to "The simulated order has been partially traded"
             ).build()
 
@@ -282,7 +294,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 FixFields.TRANSACT_TIME to now,
                 FixFields.LAST_PX to order2Price,
                 FixFields.CUM_QTY to cumQty1,
-                FixFields.LEAVES_QTY to sellOrder.orderMessage.getInt(FixFields.ORDER_QTY)!! - cumQty1,
+                FixFields.LEAVES_QTY to sellOrder.order.getInt(FixFields.ORDER_QTY)!! - cumQty1,
                 FixFields.EXEC_ID to execId.incrementAndGet(),
                 FixFields.TRD_MATCH_ID to tradeMatchId1,
             ).build()
@@ -327,7 +339,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                     FixFields.ORD_STATUS to "2",
                     FixFields.LAST_PX to order1Price,
                     FixFields.CUM_QTY to cumQty1 + cumQty2,
-                    FixFields.ORDER_QTY to sellOrder.orderMessage.getString(FixFields.ORDER_QTY)!!,
+                    FixFields.ORDER_QTY to sellOrder.order.getString(FixFields.ORDER_QTY)!!,
                     FixFields.LEAVES_QTY to leavesQty2,
                     FixFields.EXEC_ID to execId.incrementAndGet(),
                     FixFields.TRD_MATCH_ID to tradeMatchId2,
@@ -338,14 +350,14 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         // ER3 CC Order3 for Trader2
         val trader2Order3Er3CC = trader2.toBuilder()
-            .copyFields(sellOrder.orderMessage, FixFields.TRADING_PARTY)
+            .copyFields(sellOrder.order, FixFields.TRADING_PARTY)
             .addFields(
                 FixFields.TRANSACT_TIME to now,
                 FixFields.EXEC_TYPE to "C",
                 FixFields.ORD_STATUS to "C",
                 FixFields.CUM_QTY to cumQty1 + cumQty2,
                 FixFields.LEAVES_QTY to "0",
-                FixFields.ORDER_QTY to sellOrder.orderMessage.getString(FixFields.ORDER_QTY)!!,
+                FixFields.ORDER_QTY to sellOrder.order.getString(FixFields.ORDER_QTY)!!,
                 FixFields.EXEC_ID to execId.incrementAndGet(),
                 FixFields.TEXT to "The remaining part of simulated order has been expired"
             ).build()
@@ -373,5 +385,38 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         with(idBuilder()) {
             sessionAlias?.let(this::setSessionAlias)
         }
+    }
+}
+
+private data class BookRecord(val orderId: Int, val order: ParsedMessage)
+
+@Suppress("unused")
+private class Book {
+    private val lock = ReentrantLock()
+    private val buy: Queue<BookRecord> = LinkedList()
+    private val sell: Queue<BookRecord> = LinkedList()
+
+    val buyIsEmpty: Boolean
+        get() = buy.isEmpty()
+
+    val buySize: Int
+        get() = buy.size
+
+    val sellSize: Int
+        get() = sell.size
+
+    val sellIsEmpty: Boolean
+        get() = sell.isEmpty()
+
+    fun addBuy(record: BookRecord) = lock.withLock { buy.add(record) }
+    fun addSell(record: BookRecord) = lock.withLock { sell.add(record) }
+
+    fun pullBuy(): BookRecord = lock.withLock { buy.remove() }
+    fun pullSell(): BookRecord = lock.withLock { sell.remove() }
+
+    @OptIn(ExperimentalContracts::class)
+    inline fun withLock(func: Book.() -> Unit) {
+        contract { callsInPlace(func, InvocationKind.EXACTLY_ONCE) }
+        lock.withLock { func() }
     }
 }

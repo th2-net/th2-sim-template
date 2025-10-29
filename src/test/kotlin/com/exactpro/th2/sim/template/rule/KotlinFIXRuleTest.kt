@@ -101,22 +101,13 @@ class KotlinFIXRuleTest {
     )
 
     @Test
-    fun `two buy one sell for test-instrument test`() {
+    fun `two buy one sell for test-security test`() {
         testRule {
             KotlinFIXRule.reset()
 
-            val buy1 = buildMessage {
-                addField(SIDE, SIDE_BUY)
-                addField(SECURITY_ID, "test-instrument")
-            }
-            val buy2 = buildMessage {
-                addField(SIDE, SIDE_BUY)
-                addField(SECURITY_ID, "test-instrument")
-            }
-            val sell1 = buildMessage {
-                addField(SIDE, SIDE_SELL)
-                addField(SECURITY_ID, "test-instrument")
-            }
+            val buy1 = buildMessage(SIDE_BUY, "test-security")
+            val buy2 = buildMessage(SIDE_BUY, "test-security")
+            val sell1 = buildMessage(SIDE_SELL, "test-security")
             rule.assertHandle(buy1)
             rule.assertHandle(buy2)
             rule.assertHandle(sell1)
@@ -162,13 +153,132 @@ class KotlinFIXRuleTest {
     }
 
     @Test
+    fun `two buy one sell for two security ids test`() {
+        testRule {
+            KotlinFIXRule.reset()
+
+            val buyA1 = buildMessage(SIDE_BUY, "test-security-a")
+            val buyA2 = buildMessage(SIDE_BUY, "test-security-a")
+            val sellA1 = buildMessage(SIDE_SELL, "test-security-a")
+            val buyB1 = buildMessage(SIDE_BUY, "test-security-b")
+            val buyB2 = buildMessage(SIDE_BUY, "test-security-b")
+            val sellB1 = buildMessage(SIDE_SELL, "test-security-b")
+
+            rule.assertHandle(buyA1)
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buyA1, msg, ALIAS_1, orderId = 1, execId = 1) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectNewBuyIsPlaced(buyA1, msg, DC_ALIAS_1, orderId = 1, execId = 2) // execId looks as bag
+            }
+            assertNothingSent()
+
+            rule.assertHandle(buyB1)
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buyB1, msg, ALIAS_1, orderId = 2, execId = 3) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectNewBuyIsPlaced(buyB1, msg, DC_ALIAS_1, orderId = 2, execId = 4) // execId looks as bag
+            }
+            assertNothingSent()
+
+            rule.assertHandle(buyB2)
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buyB2, msg, ALIAS_1, orderId = 3, execId = 5) }
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buyB2, msg, DC_ALIAS_1, orderId = 3, execId = 6) }
+            assertNothingSent()
+
+            rule.assertHandle(buyA2)
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buyA2, msg, ALIAS_1, orderId = 4, execId = 7) }
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buyA2, msg, DC_ALIAS_1, orderId = 4, execId = 8) }
+            assertNothingSent()
+
+            rule.assertHandle(sellA1)
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buyA2, msg, ALIAS_1, orderId = 4, execId = 9, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buyA2, msg, DC_ALIAS_1, orderId = 4, execId = 9, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buyA1, msg, ALIAS_1, orderId = 1, execId = 10, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buyA1, msg, DC_ALIAS_1, orderId = 1, execId = 10, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sellA1, buyA2, null, msg, ALIAS_2, orderId = 5, execId = 11, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sellA1, buyA2, null, msg, DC_ALIAS_2, orderId = 5, execId = 11, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sellA1, buyA1, buyA2, msg, ALIAS_2, orderId = 5, execId = 12, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sellA1, buyA1, buyA2, msg, DC_ALIAS_2, orderId = 5, execId = 12, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sellA1, buyA1, buyA2, msg, ALIAS_2, orderId = 5, execId = 13)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sellA1, buyA1, buyA2, msg, DC_ALIAS_2, orderId = 5, execId = 13)
+            }
+            assertNothingSent()
+
+            rule.assertHandle(sellB1)
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buyB2, msg, ALIAS_1, orderId = 3, execId = 14, matchId = 3)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buyB2, msg, DC_ALIAS_1, orderId = 3, execId = 14, matchId = 3)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buyB1, msg, ALIAS_1, orderId = 2, execId = 15, matchId = 4)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buyB1, msg, DC_ALIAS_1, orderId = 2, execId = 15, matchId = 4)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sellB1, buyB2, null, msg, ALIAS_2, orderId = 6, execId = 16, matchId = 3)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sellB1, buyB2, null, msg, DC_ALIAS_2, orderId = 6, execId = 16, matchId = 3)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sellB1, buyB1, buyB2, msg, ALIAS_2, orderId = 6, execId = 17, matchId = 4)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sellB1, buyB1, buyB2, msg, DC_ALIAS_2, orderId = 6, execId = 17, matchId = 4)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sellB1, buyB1, buyB2, msg, ALIAS_2, orderId = 6, execId = 18)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sellB1, buyB1, buyB2, msg, DC_ALIAS_2, orderId = 6, execId = 18)
+            }
+            assertNothingSent()
+        }
+    }
+
+    @Test
     fun `nos without side`() {
         testRule {
             KotlinFIXRule.reset()
 
             val nos = buildMessage()
             rule.assertHandle(nos)
-            assertSent(BUILDER_CLASS) { msg -> expectRejected(nos, msg) }
+            assertSent(BUILDER_CLASS) { msg -> expectRejected(nos, msg, 453) }
+            assertNothingSent()
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = [SIDE_SELL, SIDE_BUY])
+    fun `nos without security id`(side: String) {
+        testRule {
+            KotlinFIXRule.reset()
+
+            val nos = buildMessage {
+                addField(SIDE, side)
+            }
+            rule.assertHandle(nos)
+            assertSent(BUILDER_CLASS) { msg -> expectRejected(nos, msg, 48) }
             assertNothingSent()
         }
     }
@@ -179,18 +289,9 @@ class KotlinFIXRuleTest {
         testRule {
             KotlinFIXRule.reset()
 
-            val buy1 = buildMessage {
-                addField(SIDE, SIDE_BUY)
-                addField(SECURITY_ID, INSTR4)
-            }
-            val buy2 = buildMessage {
-                addField(SIDE, SIDE_BUY)
-                addField(SECURITY_ID, INSTR4)
-            }
-            val sell1 = buildMessage {
-                addField(SIDE, SIDE_SELL)
-                addField(SECURITY_ID, INSTR4)
-            }
+            val buy1 = buildMessage(SIDE_BUY, INSTR4)
+            val buy2 = buildMessage(SIDE_BUY, INSTR4)
+            val sell1 = buildMessage(SIDE_SELL, INSTR4)
             rule.assertHandle(buy1)
             rule.assertHandle(buy2)
             rule.assertHandle(sell1)
@@ -244,18 +345,9 @@ class KotlinFIXRuleTest {
         testRule {
             KotlinFIXRule.reset()
 
-            val buy1 = buildMessage {
-                addField(SIDE, SIDE_BUY)
-                addField(SECURITY_ID, INSTR5)
-            }
-            val buy2 = buildMessage {
-                addField(SIDE, SIDE_BUY)
-                addField(SECURITY_ID, INSTR5)
-            }
-            val sell1 = buildMessage {
-                addField(SIDE, SIDE_SELL)
-                addField(SECURITY_ID, INSTR5)
-            }
+            val buy1 = buildMessage(SIDE_BUY, INSTR5)
+            val buy2 = buildMessage(SIDE_BUY, INSTR5)
+            val sell1 = buildMessage(SIDE_SELL, INSTR5)
             rule.assertHandle(buy1)
             rule.assertHandle(buy2)
             rule.assertHandle(sell1)
@@ -307,10 +399,7 @@ class KotlinFIXRuleTest {
         testRule {
             KotlinFIXRule.reset()
 
-            val nos = buildMessage {
-                addField(SIDE, side)
-                addField(SECURITY_ID, INSTR6)
-            }
+            val nos = buildMessage(side, INSTR6)
             rule.assertHandle(nos)
             assertSent(BUILDER_CLASS) { msg -> expectBMRejected(nos, msg) }
             assertNothingSent()
@@ -360,6 +449,11 @@ class KotlinFIXRuleTest {
                 func()
             }.build()
 
+        private fun buildMessage(side: String, securityId: String) = buildMessage {
+            addField(SIDE, side)
+            addField(SECURITY_ID, securityId)
+        }
+
         private fun expectNewBuyIsPlaced(
             nos: ParsedMessage,
             er: ParsedMessage.FromMapBuilder,
@@ -392,6 +486,7 @@ class KotlinFIXRuleTest {
         private fun expectRejected(
             nos: ParsedMessage,
             r: ParsedMessage.FromMapBuilder,
+            refTagId: Int,
         ) {
             expectThat(r) {
                 get { idBuilder() } and {
@@ -400,7 +495,7 @@ class KotlinFIXRuleTest {
                 get { type } isEqualTo REJECT
                 get { bodyBuilder() } and {
                     get { size } isEqualTo 5
-                    get { get(REF_TAG_ID) } isEqualTo "453"
+                    get { get(REF_TAG_ID) } isEqualTo refTagId.toString()
                     get { get(REF_MSG_TYPE) } isEqualTo "D"
                     get { get(REF_SEQ_NUM) } isEqualTo (nos.body[HEADER] as Map<*, *>)[MSG_SEQ_NUM]
                     get { get(TEXT) } isEqualTo "Simulating reject message"
