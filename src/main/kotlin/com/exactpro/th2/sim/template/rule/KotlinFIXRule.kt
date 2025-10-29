@@ -218,6 +218,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             )
             .addFields(
                 FixFields.TRANSACT_TIME to now,
+//                FixFields.AGGRESSOR_INDICATOR to "N",
                 FixFields.CUM_QTY to cumQty1,
                 FixFields.PRICE to order2Price,
                 FixFields.LAST_PX to order2Price,
@@ -240,6 +241,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             )
             .addFields(
                 FixFields.TRANSACT_TIME to now,
+//                FixFields.AGGRESSOR_INDICATOR to "N",
                 FixFields.CUM_QTY to cumQty2,
                 FixFields.LAST_PX to firstBuyOrder.orderMessage.getField(FixFields.PRICE),
                 FixFields.ORDER_ID to firstBuyOrder.orderId,
@@ -278,6 +280,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         val trader2Order3Er1 = trader2Order3.toBuilder()
             .addFields(
                 FixFields.TRANSACT_TIME to now,
+//                FixFields.AGGRESSOR_INDICATOR to "Y",
                 FixFields.LAST_PX to order2Price,
                 FixFields.CUM_QTY to cumQty1,
                 FixFields.LEAVES_QTY to sellOrder.orderMessage.getInt(FixFields.ORDER_QTY)!! - cumQty1,

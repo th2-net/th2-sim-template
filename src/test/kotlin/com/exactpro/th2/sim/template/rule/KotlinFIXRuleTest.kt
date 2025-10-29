@@ -21,6 +21,7 @@ import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMess
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.builders.MapBuilder
 import com.exactpro.th2.common.utils.message.transport.addFields
 import com.exactpro.th2.common.utils.message.transport.message
+import com.exactpro.th2.sim.template.FixFields.Companion.ACCOUNT_TYPE
 import com.exactpro.th2.sim.template.FixFields.Companion.BEGIN_STRING
 import com.exactpro.th2.sim.template.FixFields.Companion.BUSINESS_REJECT_REF_ID
 import com.exactpro.th2.sim.template.FixFields.Companion.CL_ORD_ID
@@ -32,6 +33,7 @@ import com.exactpro.th2.sim.template.FixFields.Companion.LAST_PX
 import com.exactpro.th2.sim.template.FixFields.Companion.LEAVES_QTY
 import com.exactpro.th2.sim.template.FixFields.Companion.MSG_SEQ_NUM
 import com.exactpro.th2.sim.template.FixFields.Companion.NO_PARTY_IDS
+import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_CAPACITY
 import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_ID
 import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_QTY
 import com.exactpro.th2.sim.template.FixFields.Companion.ORD_STATUS
@@ -50,9 +52,11 @@ import com.exactpro.th2.sim.template.FixFields.Companion.TIME_IN_FORCE
 import com.exactpro.th2.sim.template.FixFields.Companion.TRADING_PARTY
 import com.exactpro.th2.sim.template.FixFields.Companion.TRANSACT_TIME
 import com.exactpro.th2.sim.template.FixFields.Companion.TRD_MATCH_ID
+import com.exactpro.th2.sim.template.FixValues.Companion.ACCOUNT_TYPE_NON_CUSTOMER
 import com.exactpro.th2.sim.template.FixValues.Companion.EXEC_TYPE_EXPIRED
 import com.exactpro.th2.sim.template.FixValues.Companion.EXEC_TYPE_NEW
 import com.exactpro.th2.sim.template.FixValues.Companion.EXEC_TYPE_TRADE
+import com.exactpro.th2.sim.template.FixValues.Companion.ORDER_CAPACITY_PRINCIPAL
 import com.exactpro.th2.sim.template.FixValues.Companion.ORD_STATUS_EXPIRED
 import com.exactpro.th2.sim.template.FixValues.Companion.ORD_STATUS_FILLED
 import com.exactpro.th2.sim.template.FixValues.Companion.ORD_STATUS_NEW
@@ -231,47 +235,63 @@ class KotlinFIXRuleTest {
     }
 
     @Test
-    fun `INSTR5 test`() {
+    fun `two buy one sell for INSTR5 test`() {
         // test to check response of message with field SecurityID = INSTR5 and side = 1/2
         testRule {
             KotlinFIXRule.reset()
 
-            for (i in 0..1) {
-                rule.assertHandle(buildMessage {
-                    addFields(
-                        SIDE to SIDE_BUY,
-                        SECURITY_ID to INSTR5,
-                    )
-                })
-
-                assertSent(BUILDER_CLASS) { message ->
-                    Assertions.assertEquals(EXECUTION_REPORT, message.type)
-                    assertEquals(i + 1, message.bodyBuilder()[ORDER_ID])
-                    assertEquals(2 * i + 1, message.bodyBuilder()[EXEC_ID])
-                }
-
-                assertSent(BUILDER_CLASS) { message ->
-                    Assertions.assertEquals(EXECUTION_REPORT, message.type)
-                    assertEquals(i + 1, message.bodyBuilder()[ORDER_ID])
-                    assertEquals(2 * i + 2, message.bodyBuilder()[EXEC_ID])
-                }
-
-                assertNothingSent()
+            val buy1 = buildMessage {
+                addField(SIDE, SIDE_BUY)
+                addField(SECURITY_ID, INSTR5)
             }
-
-            rule.assertHandle(buildMessage {
-                addFields(
-                    SIDE to SIDE_SELL,
-                    SECURITY_ID to INSTR5,
-                )
-            })
-
-            for (i in 0..9) {
-                assertSent(BUILDER_CLASS) { message ->
-                    Assertions.assertEquals(EXECUTION_REPORT, message.type) { "Execution report with index: $i" }
-                }
+            val buy2 = buildMessage {
+                addField(SIDE, SIDE_BUY)
+                addField(SECURITY_ID, INSTR5)
             }
+            val sell1 = buildMessage {
+                addField(SIDE, SIDE_SELL)
+                addField(SECURITY_ID, INSTR5)
+            }
+            rule.assertHandle(buy1)
+            rule.assertHandle(buy2)
+            rule.assertHandle(sell1)
 
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy1, msg, ALIAS_1, orderId = 1, execId = 1) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectNewBuyIsPlaced(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 2) // execId looks as bag
+            }
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, ALIAS_1, orderId = 2, execId = 3) }
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 4) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy2, msg, ALIAS_1, orderId = 2, execId = 5, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 5, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy1, msg, ALIAS_1, orderId = 1, execId = 6, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 6, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy2, null, msg, ALIAS_2, orderId = 3, execId = 7, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy2, null, msg, DC_ALIAS_2, orderId = 3, execId = 7, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectIncorrectValueInOrdStsTag(sell1, buy1, buy2, msg, ALIAS_2, orderId = 3, execId = 8, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy1, buy2, msg, DC_ALIAS_2, orderId = 3, execId = 8, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell1, buy1, buy2, msg, ALIAS_2, orderId = 3, execId = 9)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell1, buy1, buy2, msg, DC_ALIAS_2, orderId = 3, execId = 9)
+            }
             assertNothingSent()
         }
     }
@@ -439,7 +459,7 @@ class KotlinFIXRuleTest {
                 }
                 get { type } isEqualTo EXECUTION_REPORT
                 get { bodyBuilder() } and {
-                    get { size } isEqualTo 16 // +3
+                    get { size } isEqualTo 16
                     (sell.body - NOT_COPIED_FIELD).forEach { (key, value) ->
                         get(key) { get(key).toString() } isEqualTo value.toString()
                     }
@@ -572,6 +592,46 @@ class KotlinFIXRuleTest {
                     get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString()
                         .toInt() + (buy2?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
                     get { get(EXEC_ID) } isEqualTo execId
+                    extractTradingParty("DEMO-CONN2", "DEMOFIRM1")
+                }
+            }
+        }
+
+        @Suppress("SameParameterValue")
+        private fun expectIncorrectValueInOrdStsTag(
+            sell: ParsedMessage,
+            buy1: ParsedMessage,
+            buy2: ParsedMessage?,
+            er: ParsedMessage.FromMapBuilder,
+            alias: String,
+            orderId: Int,
+            execId: Int,
+            matchId: Int,
+        ) {
+            expectThat(er) {
+                get { idBuilder() } and {
+                    get { sessionAlias } isEqualTo alias
+                }
+                get { type } isEqualTo EXECUTION_REPORT
+                get { bodyBuilder() } and {
+                    get { size } isEqualTo 18
+                    (sell.body - NOT_COPIED_FIELD).forEach { (key, value) ->
+                        get(key) { get(key).toString() } isEqualTo value.toString()
+                    }
+                    get { get(TRANSACT_TIME) }.isNotNull()
+                    get { get(ORDER_ID) } isEqualTo orderId
+                    get { get(TRD_MATCH_ID) } isEqualTo matchId
+                    get { get(LEAVES_QTY) } isEqualTo (sell.body[ORDER_QTY] as Int) - (buy1.body[ORDER_QTY] as Int) - (buy2?.body[ORDER_QTY]?.toString()
+                        ?.toInt() ?: 0)
+                    get { get(TEXT) } isEqualTo "Execution Report with incorrect value in OrdStatus tag"
+                    get { get(EXEC_TYPE) } isEqualTo EXEC_TYPE_TRADE
+                    get { get(ORD_STATUS) } isEqualTo ORD_STATUS_PARTIALLY_FILLED
+                    get { get(LAST_PX).toString() } isEqualTo buy1.body[PRICE].toString()
+                    get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString()
+                        .toInt() + (buy2?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
+                    get { get(EXEC_ID) } isEqualTo execId
+                    get { get(ORDER_CAPACITY) } isEqualTo ORDER_CAPACITY_PRINCIPAL
+                    get { get(ACCOUNT_TYPE) } isEqualTo ACCOUNT_TYPE_NON_CUSTOMER
                     extractTradingParty("DEMO-CONN2", "DEMOFIRM1")
                 }
             }
