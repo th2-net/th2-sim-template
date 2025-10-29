@@ -39,6 +39,7 @@ import com.exactpro.th2.sim.template.FixFields.Companion.HEADER
 import com.exactpro.th2.sim.template.FixFields.Companion.LAST_PX
 import com.exactpro.th2.sim.template.FixFields.Companion.LEAVES_QTY
 import com.exactpro.th2.sim.template.FixFields.Companion.MSG_SEQ_NUM
+import com.exactpro.th2.sim.template.FixFields.Companion.MSG_TYPE
 import com.exactpro.th2.sim.template.FixFields.Companion.NO_PARTY_IDS
 import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_CAPACITY
 import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_ID
@@ -62,6 +63,9 @@ import com.exactpro.th2.sim.template.FixFields.Companion.TIME_IN_FORCE
 import com.exactpro.th2.sim.template.FixFields.Companion.TRADING_PARTY
 import com.exactpro.th2.sim.template.FixFields.Companion.TRANSACT_TIME
 import com.exactpro.th2.sim.template.FixFields.Companion.TRD_MATCH_ID
+import com.exactpro.th2.sim.template.FixValues.Companion.BUSINESS_REJECT_REASON_UNKNOWN_SECURITY
+import com.exactpro.th2.sim.template.FixValues.Companion.SESSION_REJECT_REASON_REQUIRED_TAG_MISSING
+import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_BUY
 import java.time.Instant
 import java.util.LinkedList
 import java.util.Queue
@@ -109,82 +113,37 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         }
     }
 
-    override fun handle(context: IRuleContext, incomeMessage: ParsedMessage) {
+    override fun handle(context: IRuleContext, message: ParsedMessage) {
         val now = Instant.now()
-        if (!incomeMessage.containsField(SIDE)) {
-            context.send(
-                message("Reject")
-                    .addFields(
-                        REF_TAG_ID to "453",
-                        REF_MSG_TYPE to "D",
-                        REF_SEQ_NUM to incomeMessage.getFieldSoft(
-                            HEADER,
-                            MSG_SEQ_NUM
-                        ),
-                        TEXT to "Simulating reject message",
-                        SESSION_REJECT_REASON to "1"
-                    ).with(sessionAlias = incomeMessage.id.sessionAlias)
-            )
+        if (!message.containsField(SIDE)) {
+            sendReject(context, message, "453")
             return
         }
 
-        val instrument = incomeMessage.getString(SECURITY_ID)
+        val instrument = message.getString(SECURITY_ID)
         if (instrument == null) {
-            context.send(
-                message("Reject")
-                    .addFields(
-                        REF_TAG_ID to "48",
-                        REF_MSG_TYPE to "D",
-                        REF_SEQ_NUM to incomeMessage.getFieldSoft(
-                            HEADER,
-                            MSG_SEQ_NUM
-                        ),
-                        TEXT to "Simulating reject message",
-                        SESSION_REJECT_REASON to "1"
-                    ).with(sessionAlias = incomeMessage.id.sessionAlias)
-            )
+            sendReject(context, message, "48")
             return
         }
 
         if (instrument == "INSTR6") {
-            context.send(
-                message("BusinessMessageReject")
-                    .addFields(
-                        REF_TAG_ID to "48",
-                        REF_MSG_TYPE to "D",
-                        REF_SEQ_NUM to incomeMessage.getFieldSoft("header", MSG_SEQ_NUM),
-                        TEXT to "Unknown SecurityID",
-                        BUSINESS_REJECT_REASON to "2",
-                        BUSINESS_REJECT_REF_ID to incomeMessage.getField(CL_ORD_ID)
-                    ).with(sessionAlias = incomeMessage.id.sessionAlias)
-            )
+            sendBusinessMessageReject(context, message, "48")
             return
         }
 
         val incomeOrderId = orderId.incrementAndGet()
         val book = books.computeIfAbsent(instrument) { Book() }
-        if (incomeMessage.getInt(SIDE) == 1) {
-            book.addBuy(BookRecord(incomeOrderId, incomeMessage))
+        if (message.getString(SIDE) == SIDE_BUY) {
+            book.addBuy(BookRecord(incomeOrderId, message))
             val fixNew = message("ExecutionReport")
                 .copyFields(
-                    incomeMessage,
-                    SIDE,
-                    PRICE,
-                    CUM_QTY,
-                    CL_ORD_ID,
-                    SECONDARY_CL_ORD_ID,
-                    SECURITY_ID,
-                    SECURITY_ID_SOURCE,
-                    ORD_TYPE,
-                    ORDER_QTY,
-                    TRADING_PARTY,
-                    TIME_IN_FORCE,
-                    ORDER_CAPACITY,
-                    ACCOUNT_TYPE
+                    message,
+                    ACCOUNT_TYPE, CL_ORD_ID, CUM_QTY, ORDER_CAPACITY, ORDER_QTY, ORD_TYPE, PRICE, SECONDARY_CL_ORD_ID,
+                    SECURITY_ID, SECURITY_ID_SOURCE, SIDE, TIME_IN_FORCE, TRADING_PARTY
                 ).addFields(
                     TRANSACT_TIME to now,
                     ORDER_ID to incomeOrderId,
-                    LEAVES_QTY to incomeMessage.getField(ORDER_QTY)!!,
+                    LEAVES_QTY to message.getField(ORDER_QTY)!!,
                     TEXT to "Simulated New Order Buy is placed",
                     EXEC_TYPE to "0",
                     ORD_STATUS to "0",
@@ -202,7 +161,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                     .with(sessionAlias = aliases[KEY_DC_ALIAS_1])
             )
         } else {
-            book.addSell(BookRecord(incomeOrderId, incomeMessage))
+            book.addSell(BookRecord(incomeOrderId, message))
         }
 
         val sellOrder: BookRecord
@@ -214,30 +173,22 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 // we don't have enough orders for matching
                 if (!sellIsEmpty) {
                     sellOrder = pullSell()
-                    val expired = message("ExecutionReport").copyFields(
-                        sellOrder.order,
-                        TIME_IN_FORCE,
-                        SIDE,
-                        PRICE,
-                        CL_ORD_ID,
-                        SECONDARY_CL_ORD_ID,
-                        SECURITY_ID,
-                        SECURITY_ID_SOURCE,
-                        ORD_TYPE,
-                        ORDER_CAPACITY,
-                        ACCOUNT_TYPE,
-                        TRADING_PARTY
-                    ).addFields(
-                        ORDER_ID to sellOrder.orderId,
-                        TRANSACT_TIME to now,
-                        EXEC_TYPE to "C",
-                        ORD_STATUS to "C",
-                        CUM_QTY to calcQtyBuy(),
-                        LEAVES_QTY to "0",
-                        ORDER_QTY to sellOrder.order.getString(ORDER_QTY)!!,
-                        EXEC_ID to execId.incrementAndGet(),
-                        TEXT to "The remaining part of simulated order has been expired"
-                    ).build()
+                    val expired = message("ExecutionReport")
+                        .copyFields(
+                            sellOrder.order,
+                            ACCOUNT_TYPE, CL_ORD_ID, ORDER_CAPACITY, ORD_TYPE, PRICE, SECONDARY_CL_ORD_ID,
+                            SECURITY_ID, SECURITY_ID_SOURCE, SIDE, TIME_IN_FORCE, TRADING_PARTY,
+                        ).addFields(
+                            ORDER_ID to sellOrder.orderId,
+                            TRANSACT_TIME to now,
+                            EXEC_TYPE to "C",
+                            ORD_STATUS to "C",
+                            CUM_QTY to calcQtyBuy(),
+                            LEAVES_QTY to "0",
+                            ORDER_QTY to sellOrder.order.getString(ORDER_QTY)!!,
+                            EXEC_ID to execId.incrementAndGet(),
+                            TEXT to "The remaining part of simulated order has been expired"
+                        ).build()
                     context.send(expired.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_2]))
                     //DropCopy
                     context.send(expired.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_2]))
@@ -277,7 +228,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 TRADING_PARTY to hashMapOf(
                     NO_PARTY_IDS to createNoPartyIds("DEMO-CONN1", "DEMOFIRM2")
                 ),
-                SIDE to "1",
+                SIDE to SIDE_BUY,
                 TIME_IN_FORCE to "0",  // Get from message?
                 EXEC_TYPE to "F",
                 AGGRESSOR_INDICATOR to "N",
@@ -292,8 +243,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 CL_ORD_ID,
                 SECONDARY_CL_ORD_ID,
                 ORDER_QTY
-            )
-            .addFields(
+            ).addFields(
                 TRANSACT_TIME to now,
                 CUM_QTY to cumQty1,
                 PRICE to order2Price,
@@ -310,12 +260,8 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         val trader1Order1 = trader1.toBuilder()
             .copyFields(
                 firstBuyOrder.order,
-                CL_ORD_ID,
-                SECONDARY_CL_ORD_ID,
-                ORDER_QTY,
-                PRICE
-            )
-            .addFields(
+                CL_ORD_ID, ORDER_QTY, PRICE, SECONDARY_CL_ORD_ID,
+            ).addFields(
                 TRANSACT_TIME to now,
                 CUM_QTY to cumQty2,
                 LAST_PX to firstBuyOrder.order.getField(PRICE),
@@ -429,6 +375,43 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         //DropCopy
         context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_2]))
     }
+
+    private fun sendReject(
+        context: IRuleContext,
+        message: ParsedMessage,
+        refTagId: String,
+    ) {
+        context.send(
+            message("Reject")
+                .addFields(
+                    REF_TAG_ID to refTagId,
+                    REF_MSG_TYPE to message.getFieldSoft(HEADER, MSG_TYPE),
+                    REF_SEQ_NUM to message.getFieldSoft(HEADER, MSG_SEQ_NUM),
+                    TEXT to "Simulating reject message",
+                    SESSION_REJECT_REASON to SESSION_REJECT_REASON_REQUIRED_TAG_MISSING
+                ).with(sessionAlias = message.id.sessionAlias)
+        )
+    }
+
+    @Suppress("SameParameterValue")
+    private fun sendBusinessMessageReject(
+        context: IRuleContext,
+        message: ParsedMessage,
+        refTagId: String,
+    ) {
+        context.send(
+            message("BusinessMessageReject")
+                .addFields(
+                    REF_TAG_ID to refTagId,
+                    REF_MSG_TYPE to message.getFieldSoft(HEADER, MSG_TYPE),
+                    REF_SEQ_NUM to message.getFieldSoft(HEADER, MSG_SEQ_NUM),
+                    TEXT to "Unknown SecurityID",
+                    BUSINESS_REJECT_REASON to BUSINESS_REJECT_REASON_UNKNOWN_SECURITY,
+                    BUSINESS_REJECT_REF_ID to message.getField(CL_ORD_ID)
+                ).with(sessionAlias = message.id.sessionAlias)
+        )
+    }
+
 
     private fun createNoPartyIds(connect: String, firm: String): List<Map<String, Any>> = listOf(
         createParty("76", connect, "D"),

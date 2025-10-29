@@ -34,6 +34,7 @@ import com.exactpro.th2.sim.template.FixFields.Companion.HEADER
 import com.exactpro.th2.sim.template.FixFields.Companion.LAST_PX
 import com.exactpro.th2.sim.template.FixFields.Companion.LEAVES_QTY
 import com.exactpro.th2.sim.template.FixFields.Companion.MSG_SEQ_NUM
+import com.exactpro.th2.sim.template.FixFields.Companion.MSG_TYPE
 import com.exactpro.th2.sim.template.FixFields.Companion.NO_PARTY_IDS
 import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_CAPACITY
 import com.exactpro.th2.sim.template.FixFields.Companion.ORDER_ID
@@ -471,7 +472,8 @@ class KotlinFIXRuleTest {
                     TRIGGER_FIELD to "true",
                     HEADER to hashMapOf(
                         BEGIN_STRING to "FIXT.1.1",
-                        MSG_SEQ_NUM to System.currentTimeMillis()
+                        MSG_SEQ_NUM to System.currentTimeMillis(),
+                        MSG_TYPE to "D",
                     ),
                     TRANSACT_TIME to Instant.now(),
                     CL_ORD_ID to System.currentTimeMillis().toString(),
