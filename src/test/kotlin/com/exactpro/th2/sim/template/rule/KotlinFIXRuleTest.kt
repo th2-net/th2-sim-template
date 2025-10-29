@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.sim.template.rule
 
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.Direction
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.builders.MapBuilder
 import com.exactpro.th2.common.utils.message.transport.addFields
@@ -38,8 +39,11 @@ import com.exactpro.th2.sim.template.FixFields.Companion.PARTY_ID
 import com.exactpro.th2.sim.template.FixFields.Companion.PARTY_ID_SOURCE
 import com.exactpro.th2.sim.template.FixFields.Companion.PARTY_ROLE
 import com.exactpro.th2.sim.template.FixFields.Companion.PRICE
+import com.exactpro.th2.sim.template.FixFields.Companion.REF_MSG_TYPE
 import com.exactpro.th2.sim.template.FixFields.Companion.REF_SEQ_NUM
+import com.exactpro.th2.sim.template.FixFields.Companion.REF_TAG_ID
 import com.exactpro.th2.sim.template.FixFields.Companion.SECURITY_ID
+import com.exactpro.th2.sim.template.FixFields.Companion.SESSION_REJECT_REASON
 import com.exactpro.th2.sim.template.FixFields.Companion.SIDE
 import com.exactpro.th2.sim.template.FixFields.Companion.TEXT
 import com.exactpro.th2.sim.template.FixFields.Companion.TIME_IN_FORCE
@@ -60,6 +64,7 @@ import com.exactpro.th2.sim.template.FixValues.Companion.PARTY_ROLE_CONTRA_FIRM
 import com.exactpro.th2.sim.template.FixValues.Companion.PARTY_ROLE_DECK_ID
 import com.exactpro.th2.sim.template.FixValues.Companion.PARTY_ROLE_EXECUTING_TRADER
 import com.exactpro.th2.sim.template.FixValues.Companion.PARTY_ROLE_INVESTMENT_DIVISION_MARKER
+import com.exactpro.th2.sim.template.FixValues.Companion.SESSION_REJECT_REASON_REQUIRED_TAG_MISSING
 import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_BUY
 import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_SELL
 import com.exactpro.th2.sim.template.FixValues.Companion.TIME_IN_FORCE_DAY
@@ -88,7 +93,7 @@ class KotlinFIXRuleTest {
     )
 
     @Test
-    fun `two buy one sell trade test`() {
+    fun `two buy one sell for test-instrument test`() {
         testRule {
             KotlinFIXRule.reset()
 
@@ -110,176 +115,117 @@ class KotlinFIXRuleTest {
 
             assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy1, msg, ALIAS_1, orderId = 1, execId = 1) }
             assertSent(BUILDER_CLASS) { msg ->
-                expectNewBuyIsPlaced(
-                    buy1,
-                    msg,
-                    DC_ALIAS_1,
-                    orderId = 1,
-                    execId = 2
-                )
-            } // execId looks as bag
+                expectNewBuyIsPlaced(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 2) // execId looks as bag
+            }
             assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, ALIAS_1, orderId = 2, execId = 3) }
             assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 4) }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderFullFilled(
-                    buy2,
-                    msg,
-                    ALIAS_1,
-                    orderId = 2,
-                    execId = 5,
-                    matchId = 1
-                )
+                expectOrderFullFilled(buy2, msg, ALIAS_1, orderId = 2, execId = 5, matchId = 1)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderFullFilled(
-                    buy2,
-                    msg,
-                    DC_ALIAS_1,
-                    orderId = 2,
-                    execId = 5,
-                    matchId = 1
-                )
+                expectOrderFullFilled(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 5, matchId = 1)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderFullFilled(
-                    buy1,
-                    msg,
-                    ALIAS_1,
-                    orderId = 1,
-                    execId = 6,
-                    matchId = 2
-                )
+                expectOrderFullFilled(buy1, msg, ALIAS_1, orderId = 1, execId = 6, matchId = 2)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderFullFilled(
-                    buy1,
-                    msg,
-                    DC_ALIAS_1,
-                    orderId = 1,
-                    execId = 6,
-                    matchId = 2
-                )
+                expectOrderFullFilled(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 6, matchId = 2)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderPartiallyTraded(
-                    sell1,
-                    buy2,
-                    null,
-                    msg,
-                    ALIAS_2,
-                    orderId = 3,
-                    execId = 7,
-                    matchId = 1
-                )
+                expectOrderPartiallyTraded(sell1, buy2, null, msg, ALIAS_2, orderId = 3, execId = 7, matchId = 1)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderPartiallyTraded(
-                    sell1,
-                    buy2,
-                    null,
-                    msg,
-                    DC_ALIAS_2,
-                    orderId = 3,
-                    execId = 7,
-                    matchId = 1
-                )
+                expectOrderPartiallyTraded(sell1, buy2, null, msg, DC_ALIAS_2, orderId = 3, execId = 7, matchId = 1)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderPartiallyTraded(
-                    sell1,
-                    buy1,
-                    buy2,
-                    msg,
-                    ALIAS_2,
-                    orderId = 3,
-                    execId = 8,
-                    matchId = 2
-                )
+                expectOrderPartiallyTraded(sell1, buy1, buy2, msg, ALIAS_2, orderId = 3, execId = 8, matchId = 2)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderPartiallyTraded(
-                    sell1,
-                    buy1,
-                    buy2,
-                    msg,
-                    DC_ALIAS_2,
-                    orderId = 3,
-                    execId = 8,
-                    matchId = 2
-                )
+                expectOrderPartiallyTraded(sell1, buy1, buy2, msg, DC_ALIAS_2, orderId = 3, execId = 8, matchId = 2)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderExpired(
-                    sell1,
-                    buy1,
-                    buy2,
-                    msg,
-                    ALIAS_2,
-                    orderId = 3,
-                    execId = 9
-                )
+                expectOrderExpired(sell1, buy1, buy2, msg, ALIAS_2, orderId = 3, execId = 9)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderExpired(
-                    sell1,
-                    buy1,
-                    buy2,
-                    msg,
-                    DC_ALIAS_2,
-                    orderId = 3,
-                    execId = 9
-                )
+                expectOrderExpired(sell1, buy1, buy2, msg, DC_ALIAS_2, orderId = 3, execId = 9)
             }
-
             assertNothingSent()
         }
     }
 
     @Test
     fun `nos without side`() {
+        testRule {
+            KotlinFIXRule.reset()
 
+            val nos = buildMessage()
+            rule.assertHandle(nos)
+            assertSent(BUILDER_CLASS) { msg -> expectRejected(nos, msg) }
+            assertNothingSent()
+        }
     }
 
     @Test
-    fun `INSTR4 test`() {
+    fun `two buy one sell for INSTR4 test`() {
         // test to check response of message with field SecurityID = INSTR4 and side = 1/2
         testRule {
             KotlinFIXRule.reset()
 
-            for (i in 0..1) {
-                rule.assertHandle(buildMessage {
-                    addField(SIDE, SIDE_BUY)
-                    addField(SECURITY_ID, INSTR4)
-                })
-
-                assertSent(BUILDER_CLASS) { message ->
-                    Assertions.assertEquals(EXECUTION_REPORT, message.type)
-                    assertEquals(i + 1, message.bodyBuilder()[ORDER_ID])
-                    assertEquals(2 * i + 1, message.bodyBuilder()[EXEC_ID])
-                }
-
-                assertSent(BUILDER_CLASS) { message ->
-                    Assertions.assertEquals(EXECUTION_REPORT, message.type)
-                    assertEquals(i + 1, message.bodyBuilder()[ORDER_ID])
-                    assertEquals(2 * i + 2, message.bodyBuilder()[EXEC_ID])
-                }
-
-                assertNothingSent()
+            val buy1 = buildMessage {
+                addField(SIDE, SIDE_BUY)
+                addField(SECURITY_ID, INSTR4)
             }
-
-            rule.assertHandle(buildMessage {
-                addFields(
-                    SIDE to SIDE_SELL,
-                    SECURITY_ID to INSTR4,
-                )
-            })
-
-            for (i in 0..10) {
-                assertSent(BUILDER_CLASS) { message ->
-                    Assertions.assertEquals(EXECUTION_REPORT, message.type) { "Execution report with index: $i" }
-                }
+            val buy2 = buildMessage {
+                addField(SIDE, SIDE_BUY)
+                addField(SECURITY_ID, INSTR4)
             }
+            val sell1 = buildMessage {
+                addField(SIDE, SIDE_SELL)
+                addField(SECURITY_ID, INSTR4)
+            }
+            rule.assertHandle(buy1)
+            rule.assertHandle(buy2)
+            rule.assertHandle(sell1)
 
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy1, msg, ALIAS_1, orderId = 1, execId = 1) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectNewBuyIsPlaced(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 2) // execId looks as bag
+            }
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, ALIAS_1, orderId = 2, execId = 3) }
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 4) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy2, msg, ALIAS_1, orderId = 2, execId = 5, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 5, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy1, msg, ALIAS_1, orderId = 1, execId = 6, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 6, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy2, null, msg, ALIAS_2, orderId = 3, execId = 7, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy2, null, msg, DC_ALIAS_2, orderId = 3, execId = 7, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy1, buy2, msg, ALIAS_2, orderId = 3, execId = 8, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy1, buy2, msg, DC_ALIAS_2, orderId = 3, execId = 8, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectExtraER(sell1, buy1, buy2, msg, ALIAS_2, orderId = 3, execId = 9, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell1, buy1, buy2, msg, ALIAS_2, orderId = 3, execId = 10)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell1, buy1, buy2, msg, DC_ALIAS_2, orderId = 3, execId = 10)
+            }
             assertNothingSent()
         }
     }
@@ -363,6 +309,7 @@ class KotlinFIXRuleTest {
         private const val DC_ALIAS_2 = "DC_ALIAS_2"
 
         private const val EXECUTION_REPORT = "ExecutionReport"
+        private const val REJECT = "Reject"
 
         private const val TRIGGER_FIELD = "check"
         private val NOT_COPIED_FIELD = setOf(HEADER, TRANSACT_TIME, TRIGGER_FIELD)
@@ -374,6 +321,11 @@ class KotlinFIXRuleTest {
             func: ParsedMessage.FromMapBuilder.() -> Unit = {}
         ): ParsedMessage =
             message(type) {
+                idBuilder()
+                    .setSessionAlias("test-alias")
+                    .setDirection(Direction.OUTGOING)
+                    .setSequence(System.currentTimeMillis())
+                    .setTimestamp(Instant.now())
                 addFields(
                     TRIGGER_FIELD to "true",
                     HEADER to hashMapOf(
@@ -417,6 +369,26 @@ class KotlinFIXRuleTest {
             }
         }
 
+        private fun expectRejected(
+            nos: ParsedMessage,
+            r: ParsedMessage.FromMapBuilder,
+        ) {
+            expectThat(r) {
+                get { idBuilder() } and {
+                    get { sessionAlias } isEqualTo nos.id.sessionAlias
+                }
+                get { type } isEqualTo REJECT
+                get { bodyBuilder() } and {
+                    get { size } isEqualTo 5
+                    get { get(REF_TAG_ID) } isEqualTo "453"
+                    get { get(REF_MSG_TYPE) } isEqualTo "D"
+                    get { get(REF_SEQ_NUM) } isEqualTo (nos.body[HEADER] as Map<*,*>)[MSG_SEQ_NUM]
+                    get { get(TEXT) } isEqualTo "Simulating reject message"
+                    get { get(SESSION_REJECT_REASON) } isEqualTo SESSION_REJECT_REASON_REQUIRED_TAG_MISSING
+                }
+            }
+        }
+
         @Suppress("SameParameterValue")
         private fun expectOrderExpired(
             sell: ParsedMessage,
@@ -443,8 +415,50 @@ class KotlinFIXRuleTest {
                     get { get(TEXT) } isEqualTo "The remaining part of simulated order has been expired"
                     get { get(EXEC_TYPE) } isEqualTo EXEC_TYPE_EXPIRED
                     get { get(ORD_STATUS) } isEqualTo ORD_STATUS_EXPIRED
-                    get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString().toInt() + buy2.body[ORDER_QTY].toString().toInt()
+                    get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString()
+                        .toInt() + buy2.body[ORDER_QTY].toString().toInt()
                     get { get(EXEC_ID) } isEqualTo execId
+                }
+            }
+        }
+
+        @Suppress("SameParameterValue")
+        private fun expectExtraER(
+            sell: ParsedMessage,
+            buy1: ParsedMessage,
+            buy2: ParsedMessage,
+            er: ParsedMessage.FromMapBuilder,
+            alias: String,
+            orderId: Int,
+            execId: Int,
+            matchId: Int,
+        ) {
+            expectThat(er) {
+                get { idBuilder() } and {
+                    get { sessionAlias } isEqualTo alias
+                }
+                get { type } isEqualTo EXECUTION_REPORT
+                get { bodyBuilder() } and {
+                    get { size } isEqualTo 16 // +3
+                    (sell.body - NOT_COPIED_FIELD).forEach { (key, value) ->
+                        get(key) { get(key).toString() } isEqualTo value.toString()
+                    }
+                    get { get(TRANSACT_TIME) }.isNotNull()
+                    get { get(ORDER_ID) } isEqualTo orderId
+                    get { get(LEAVES_QTY) } isEqualTo (
+                            sell.body[ORDER_QTY].toString().toInt()
+                                    - buy1.body[ORDER_QTY].toString().toInt()
+                                    - buy2.body[ORDER_QTY].toString().toInt()
+                    )
+                    get { get(TEXT) } isEqualTo "Extra Execution Report"
+                    get { get(EXEC_TYPE) } isEqualTo EXEC_TYPE_TRADE
+                    get { get(ORD_STATUS) } isEqualTo ORD_STATUS_FILLED
+                    get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString()
+                        .toInt() + buy2.body[ORDER_QTY].toString().toInt()
+                    get { get(EXEC_ID) } isEqualTo execId
+                    get { get(LAST_PX) } isEqualTo buy1.body[PRICE].toString()
+                    get { get(TRD_MATCH_ID) } isEqualTo matchId
+                    extractTradingParty("DEMO-CONN2", "DEMOFIRM1")
                 }
             }
         }
@@ -549,12 +563,14 @@ class KotlinFIXRuleTest {
                     get { get(TRANSACT_TIME) }.isNotNull()
                     get { get(ORDER_ID) } isEqualTo orderId
                     get { get(TRD_MATCH_ID) } isEqualTo matchId
-                    get { get(LEAVES_QTY) } isEqualTo (sell.body[ORDER_QTY] as Int) - (buy1.body[ORDER_QTY] as Int) - (buy2?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
+                    get { get(LEAVES_QTY) } isEqualTo (sell.body[ORDER_QTY] as Int) - (buy1.body[ORDER_QTY] as Int) - (buy2?.body[ORDER_QTY]?.toString()
+                        ?.toInt() ?: 0)
                     get { get(TEXT) } isEqualTo "The simulated order has been partially traded"
                     get { get(EXEC_TYPE) } isEqualTo EXEC_TYPE_TRADE
                     get { get(ORD_STATUS) } isEqualTo ORD_STATUS_PARTIALLY_FILLED
                     get { get(LAST_PX).toString() } isEqualTo buy1.body[PRICE].toString()
-                    get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString().toInt() + (buy2?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
+                    get { get(CUM_QTY) } isEqualTo buy1.body[ORDER_QTY].toString()
+                        .toInt() + (buy2?.body[ORDER_QTY]?.toString()?.toInt() ?: 0)
                     get { get(EXEC_ID) } isEqualTo execId
                     extractTradingParty("DEMO-CONN2", "DEMOFIRM1")
                 }

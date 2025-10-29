@@ -53,6 +53,7 @@ class FixFields {
         const val PARTY_ROLE = "PartyRole"
         const val PARTY_ID = "PartyID"
         const val PARTY_ID_SOURCE = "PartyIDSource"
+        const val AGGRESSOR_INDICATOR = "AggressorIndicator"
 
         const val SECURITY_STATUS_REQ_ID = "SecurityStatusReqID"
         const val CURRENCY = "Currency"

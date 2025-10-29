@@ -86,7 +86,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                         FixFields.REF_TAG_ID to "453",
                         FixFields.REF_MSG_TYPE to "D",
                         FixFields.REF_SEQ_NUM to incomeMessage.getFieldSoft(
-                            FixFields.BEGIN_STRING,
+                            FixFields.HEADER,
                             FixFields.MSG_SEQ_NUM
                         ),
                         FixFields.TEXT to "Simulating reject message",

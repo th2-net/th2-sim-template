@@ -35,5 +35,6 @@ class FixValues {
         const val PARTY_ROLE_INVESTMENT_DIVISION_MARKER = "122"
         const val PARTY_ID_SOURCE_PROPRIETARY_CUSTOM_CODE = "D"
         const val PARTY_ID_SOURCE_SHORT_CODE_IDENTIFIER = "P"
+        const val SESSION_REJECT_REASON_REQUIRED_TAG_MISSING = "1"
     }
 }
