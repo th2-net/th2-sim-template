@@ -482,11 +482,11 @@ private class Book(
     val sellIsEmpty: Boolean
         get() = sell.isEmpty()
 
-    fun addBuy(record: BookRecord) = lock.withLock { buy.add(record.log(ADD, SIDE_BUY)) }
-    fun addSell(record: BookRecord) = lock.withLock { sell.add(record.log(ADD, SIDE_SELL)) }
+    fun addBuy(record: BookRecord) = lock.withLock { buy.add(record.log(ADD, "BUY")) }
+    fun addSell(record: BookRecord) = lock.withLock { sell.add(record.log(ADD, "SELL")) }
 
-    fun pullBuy(): BookRecord = lock.withLock { buy.remove().log(DELETE, SIDE_BUY) }
-    fun pullSell(): BookRecord = lock.withLock { sell.remove().log(DELETE, SIDE_SELL) }
+    fun pullBuy(): BookRecord = lock.withLock { buy.remove().log(DELETE, "BUY") }
+    fun pullSell(): BookRecord = lock.withLock { sell.remove().log(DELETE, "SELL") }
 
     fun calcQtyBuy(): Int = lock.withLock { calcQty(buy) }
 

@@ -207,7 +207,7 @@ class KotlinFIXRuleTest {
                                     buy.body[CL_ORD_ID],
                                     buyEr?.body[ORDER_ID]?.toString(),
                                     buy.body[SECURITY_ID],
-                                    SIDE_BUY,
+                                    "BUY",
                                     buy.body[PRICE]?.toString(),
                                     buy.body[ORDER_QTY]?.toString(),
                                 ), lines[1], "check line 1"
@@ -221,7 +221,7 @@ class KotlinFIXRuleTest {
                                     sell.body[CL_ORD_ID],
                                     sellEr?.body[ORDER_ID]?.toString(),
                                     sell.body[SECURITY_ID],
-                                    SIDE_SELL,
+                                    "SELL",
                                     sell.body[PRICE]?.toString(),
                                     sell.body[ORDER_QTY]?.toString(),
                                 ), lines[2], "check line 2"
@@ -235,7 +235,7 @@ class KotlinFIXRuleTest {
                                     sell.body[CL_ORD_ID],
                                     sellEr?.body[ORDER_ID]?.toString(),
                                     sell.body[SECURITY_ID],
-                                    SIDE_SELL,
+                                    "SELL",
                                     sell.body[PRICE]?.toString(),
                                     sell.body[ORDER_QTY]?.toString(),
                                 ), lines[3], "check line 3"
