@@ -77,8 +77,16 @@ import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_BUY
 import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_SELL
 import com.exactpro.th2.sim.template.FixValues.Companion.TIME_IN_FORCE_DAY
 import com.exactpro.th2.sim.template.rule.test.api.TestRuleContext.Companion.testRule
+import com.opencsv.CSVReader
+import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertAll
+import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import strikt.api.Assertion
@@ -86,26 +94,163 @@ import strikt.api.expectThat
 import strikt.assertions.isA
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
+import java.io.FileReader
+import java.nio.file.Path
 import java.time.Instant
+import kotlin.io.path.exists
+import kotlin.io.path.extension
+import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.name
+import kotlin.io.path.writeText
 import kotlin.random.Random
 
-class KotlinFIXRuleTest {
 
-    private val rule = KotlinFIXRule(
-        mapOf(TRIGGER_FIELD to "true"),
-        mapOf(
-            "ALIAS_1" to ALIAS_1,
-            "ALIAS_2" to ALIAS_2,
-            "DC_ALIAS_1" to DC_ALIAS_1,
-            "DC_ALIAS_2" to DC_ALIAS_2,
+class KotlinFIXRuleTest {
+    @BeforeEach
+    fun beforeEach() {
+        KotlinFIXRule.reset()
+    }
+
+    @Test
+    fun `csv book writer remove old files test`(@TempDir tempDir: Path) {
+        val pattern = "test-file"
+        System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
+        System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
+
+        val fileD = tempDir.resolve("$pattern-d.csv").also { it.writeText("file d") }
+        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+        val file2 = tempDir.resolve("$pattern-2.csv").also { it.writeText("file 2") }
+        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+        val fileA = tempDir.resolve("$pattern-a.csv").also { it.writeText("file a") }
+
+        assertAll(
+            { assertTrue(fileD.exists(), "file-D") },
+            { assertTrue(file2.exists(), "file-2") },
+            { assertTrue(fileA.exists(), "file-A") },
         )
-    )
+
+        createRule()
+
+        assertAll(
+            { assertFalse(fileD.exists(), "file-D") },
+            { assertFalse(file2.exists(), "file-2") },
+            { assertTrue(fileA.exists(), "file-A") },
+            {
+                val files = tempDir.listDirectoryEntries().toList()
+                assertAll(
+                    { assertEquals(2, files.size, "check size of $files") },
+                    { assertTrue(files.all { it.name.startsWith(pattern) }, "check pattern in $files") },
+                    { assertTrue(files.all { it.extension == "csv" }, "check extension in $files") },
+                )
+            }
+        )
+    }
+
+    @Test
+    fun `one buy one sell for test-security with book log test`(@TempDir tempDir: Path) {
+        val pattern = "test-file"
+        System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
+        System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
+
+        testRule {
+            val rule = createRule()
+            val buy = buildMessage(SIDE_BUY, "test-security")
+            val sell = buildMessage(SIDE_SELL, "test-security")
+            rule.assertHandle(buy)
+            rule.assertHandle(sell)
+
+            var buyEr: ParsedMessage? = null
+            var sellEr: ParsedMessage? = null
+
+            assertSent(BUILDER_CLASS) { msg ->
+                buyEr = msg.build()
+                expectNewBuyIsPlaced(buy, msg, ALIAS_1, orderId = 1, execId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectNewBuyIsPlaced(buy, msg, DC_ALIAS_1, orderId = 1, execId = 2) // execId looks as bag
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                sellEr = msg.build()
+                expectOrderExpired(sell, buy, null, msg, ALIAS_2, orderId = 2, execId = 3)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell, buy, null, msg, DC_ALIAS_2, orderId = 2, execId = 3)
+            }
+            assertNothingSent()
+
+            val files = tempDir.listDirectoryEntries().toList()
+            assertAll(
+                { assertEquals(1, files.size, "check size") },
+                {
+                    val lines = CSVReader(FileReader(files.single().toFile())).readAll()
+                    assertAll(
+                        { assertEquals(4, lines.size, "check lines") },
+                        {
+                            assertArrayEquals(
+                                arrayOf(
+                                    "Action",
+                                    "TransactTime",
+                                    "ClOrdID",
+                                    "OrdID",
+                                    "Instrument",
+                                    "Side",
+                                    "Price",
+                                    "Qty"
+                                ), lines[0], "check line 0"
+                            )
+                        },
+                        {
+                            assertArrayEquals(
+                                arrayOf(
+                                    "ADD",
+                                    buyEr?.body[TRANSACT_TIME]?.toString(),
+                                    buy.body[CL_ORD_ID],
+                                    buyEr?.body[ORDER_ID]?.toString(),
+                                    buy.body[SECURITY_ID],
+                                    SIDE_BUY,
+                                    buy.body[PRICE]?.toString(),
+                                    buy.body[ORDER_QTY]?.toString(),
+                                ), lines[1], "check line 1"
+                            )
+                        },
+                        {
+                            assertArrayEquals(
+                                arrayOf(
+                                    "ADD",
+                                    sellEr?.body[TRANSACT_TIME]?.toString(),
+                                    sell.body[CL_ORD_ID],
+                                    sellEr?.body[ORDER_ID]?.toString(),
+                                    sell.body[SECURITY_ID],
+                                    SIDE_SELL,
+                                    sell.body[PRICE]?.toString(),
+                                    sell.body[ORDER_QTY]?.toString(),
+                                ), lines[2], "check line 2"
+                            )
+                        },
+                        {
+                            assertArrayEquals(
+                                arrayOf(
+                                    "DELETE",
+                                    sellEr?.body[TRANSACT_TIME]?.toString(),
+                                    sell.body[CL_ORD_ID],
+                                    sellEr?.body[ORDER_ID]?.toString(),
+                                    sell.body[SECURITY_ID],
+                                    SIDE_SELL,
+                                    sell.body[PRICE]?.toString(),
+                                    sell.body[ORDER_QTY]?.toString(),
+                                ), lines[3], "check line 3"
+                            )
+                        },
+                    )
+                },
+            )
+        }
+    }
 
     @Test
     fun `two buy one sell for test-security test`() {
         testRule {
-            KotlinFIXRule.reset()
-
+            val rule = createRule()
             val buy1 = buildMessage(SIDE_BUY, "test-security")
             val buy2 = buildMessage(SIDE_BUY, "test-security")
             val sell1 = buildMessage(SIDE_SELL, "test-security")
@@ -156,8 +301,7 @@ class KotlinFIXRuleTest {
     @Test
     fun `one buy two sell for test-security test`() {
         testRule {
-            KotlinFIXRule.reset()
-
+            val rule = createRule()
             val buy1 = buildMessage(SIDE_BUY, "test-security")
             val sell1 = buildMessage(SIDE_SELL, "test-security")
             val sell2 = buildMessage(SIDE_SELL, "test-security")
@@ -188,8 +332,7 @@ class KotlinFIXRuleTest {
     @Test
     fun `two buy one sell for two security ids test`() {
         testRule {
-            KotlinFIXRule.reset()
-
+            val rule = createRule()
             val buyA1 = buildMessage(SIDE_BUY, "test-security-a")
             val buyA2 = buildMessage(SIDE_BUY, "test-security-a")
             val sellA1 = buildMessage(SIDE_SELL, "test-security-a")
@@ -292,8 +435,7 @@ class KotlinFIXRuleTest {
     @Test
     fun `nos without side`() {
         testRule {
-            KotlinFIXRule.reset()
-
+            val rule = createRule()
             val nos = buildMessage()
             rule.assertHandle(nos)
             assertSent(BUILDER_CLASS) { msg -> expectRejected(nos, msg, 453) }
@@ -305,8 +447,7 @@ class KotlinFIXRuleTest {
     @ValueSource(strings = [SIDE_SELL, SIDE_BUY])
     fun `nos without security id`(side: String) {
         testRule {
-            KotlinFIXRule.reset()
-
+            val rule = createRule()
             val nos = buildMessage {
                 addField(SIDE, side)
             }
@@ -320,8 +461,7 @@ class KotlinFIXRuleTest {
     @DisplayName("test to check response of message with field SecurityID = INSTR4 and side = 1/2")
     fun `two buy one sell for INSTR4 test`() {
         testRule {
-            KotlinFIXRule.reset()
-
+            val rule = createRule()
             val buy1 = buildMessage(SIDE_BUY, INSTR4)
             val buy2 = buildMessage(SIDE_BUY, INSTR4)
             val sell1 = buildMessage(SIDE_SELL, INSTR4)
@@ -376,8 +516,7 @@ class KotlinFIXRuleTest {
     @DisplayName("test to check response of message with field SecurityID = INSTR5 and side = 1/2")
     fun `two buy one sell for INSTR5 test`() {
         testRule {
-            KotlinFIXRule.reset()
-
+            val rule = createRule()
             val buy1 = buildMessage(SIDE_BUY, INSTR5)
             val buy2 = buildMessage(SIDE_BUY, INSTR5)
             val sell1 = buildMessage(SIDE_SELL, INSTR5)
@@ -430,8 +569,7 @@ class KotlinFIXRuleTest {
     @DisplayName("test to check response of message with field SecurityID = INSTR6")
     fun `nos for INSTR6 test`(side: String) {
         testRule {
-            KotlinFIXRule.reset()
-
+            val rule = createRule()
             val nos = buildMessage(side, INSTR6)
             rule.assertHandle(nos)
             assertSent(BUILDER_CLASS) { msg -> expectBMRejected(nos, msg) }
@@ -457,6 +595,16 @@ class KotlinFIXRuleTest {
         private val NOT_COPIED_FIELD = setOf(HEADER, TRANSACT_TIME, TRIGGER_FIELD)
 
         private val BUILDER_CLASS = ParsedMessage.FromMapBuilder::class.java
+
+        private fun createRule(): KotlinFIXRule = KotlinFIXRule(
+            mapOf(TRIGGER_FIELD to "true"),
+            mapOf(
+                "ALIAS_1" to ALIAS_1,
+                "ALIAS_2" to ALIAS_2,
+                "DC_ALIAS_1" to DC_ALIAS_1,
+                "DC_ALIAS_2" to DC_ALIAS_2,
+            )
+        )
 
         private inline fun buildMessage(
             type: String = "NewOrderSingle",

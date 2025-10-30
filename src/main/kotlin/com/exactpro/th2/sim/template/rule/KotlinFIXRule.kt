@@ -67,8 +67,12 @@ import com.exactpro.th2.sim.template.FixValues.Companion.BUSINESS_REJECT_REASON_
 import com.exactpro.th2.sim.template.FixValues.Companion.SESSION_REJECT_REASON_REQUIRED_TAG_MISSING
 import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_BUY
 import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_SELL
+import com.exactpro.th2.sim.template.rule.Action.ADD
+import com.exactpro.th2.sim.template.rule.Action.DELETE
 import com.opencsv.CSVWriter
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.FileWriter
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
 import java.util.LinkedList
@@ -80,10 +84,20 @@ import kotlin.concurrent.withLock
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
+import kotlin.io.path.createDirectories
+import kotlin.io.path.extension
+import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.name
+import kotlin.io.path.notExists
+
+private val LOGGER = KotlinLogging.logger {}
 
 class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, String>) : MessageCompareRule() {
 
     companion object {
+        private const val ENV_BOOK_LOG_DIR = "th2.sim.kotlin-fix-rule.book-log.dir"
+        private const val ENV_BOOK_LOG_FILE_PATTERN = "th2.sim.kotlin-fix-rule.book-log.pattern"
+
         private const val KEY_ALIAS_1 = "ALIAS_1"
         private const val KEY_ALIAS_2 = "ALIAS_2"
         private const val KEY_DC_ALIAS_1 = "DC_ALIAS_1"
@@ -102,21 +116,10 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
             books.clear()
         }
-
-        private fun CsvWriter.writeOrder(action: Action, transactTime: Instant, orderId: String, order: ParsedMessage) {
-            with(order) {
-                val side = when(val orig = getString(SIDE)) {
-                    SIDE_BUY -> "BUY"
-                    SIDE_SELL -> "SELL"
-                    else -> orig
-                }
-                write(action, transactTime, getString(CL_ORD_ID), orderId, getString(SECURITY_ID),
-                    side, getString(PRICE), getString(ORDER_QTY))
-            }
-        }
     }
 
     private val aliases: Map<String, String>
+    private val bookLog: BookLog?
 
     init {
         init("NewOrderSingle", fields)
@@ -127,10 +130,16 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             putIfAbsent(KEY_DC_ALIAS_1, "dc-demo-server1")
             putIfAbsent(KEY_DC_ALIAS_2, "dc-demo-server2")
         }
+
+        //FIXME: several rules can affect each other
+        bookLog = CsvBookLog.createCsvBookLog(
+            System.getProperty(ENV_BOOK_LOG_DIR)?.run(Path::of),
+            System.getProperty(ENV_BOOK_LOG_FILE_PATTERN)
+        )
     }
 
     override fun handle(context: IRuleContext, message: ParsedMessage) {
-        val now = Instant.now()
+        val handleTimestamp = Instant.now()
         if (!message.containsField(SIDE)) {
             sendReject(context, message, "453")
             return
@@ -148,16 +157,16 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         }
 
         val incomeOrderId = orderId.incrementAndGet()
-        val book = books.computeIfAbsent(instrument) { Book() }
+        val book = books.computeIfAbsent(instrument) { Book(bookLog) }
         if (message.getString(SIDE) == SIDE_BUY) {
-            book.addBuy(BookRecord(incomeOrderId, message))
+            book.addBuy(BookRecord(incomeOrderId, handleTimestamp, message))
             val fixNew = message("ExecutionReport")
                 .copyFields(
                     message,
                     ACCOUNT_TYPE, CL_ORD_ID, CUM_QTY, ORDER_CAPACITY, ORDER_QTY, ORD_TYPE, PRICE, SECONDARY_CL_ORD_ID,
                     SECURITY_ID, SECURITY_ID_SOURCE, SIDE, TIME_IN_FORCE, TRADING_PARTY
                 ).addFields(
-                    TRANSACT_TIME to now,
+                    TRANSACT_TIME to handleTimestamp,
                     ORDER_ID to incomeOrderId,
                     LEAVES_QTY to message.getField(ORDER_QTY)!!,
                     TEXT to "Simulated New Order Buy is placed",
@@ -177,7 +186,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                     .with(sessionAlias = aliases[KEY_DC_ALIAS_1])
             )
         } else {
-            book.addSell(BookRecord(incomeOrderId, message))
+            book.addSell(BookRecord(incomeOrderId, handleTimestamp, message))
         }
 
         val sellOrder: BookRecord
@@ -196,7 +205,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                             SECURITY_ID, SECURITY_ID_SOURCE, SIDE, TIME_IN_FORCE, TRADING_PARTY,
                         ).addFields(
                             ORDER_ID to sellOrder.orderId,
-                            TRANSACT_TIME to now,
+                            TRANSACT_TIME to handleTimestamp,
                             EXEC_TYPE to "C",
                             ORD_STATUS to "C",
                             CUM_QTY to calcQtyBuy(),
@@ -260,7 +269,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 SECONDARY_CL_ORD_ID,
                 ORDER_QTY
             ).addFields(
-                TRANSACT_TIME to now,
+                TRANSACT_TIME to handleTimestamp,
                 CUM_QTY to cumQty1,
                 PRICE to order2Price,
                 LAST_PX to order2Price,
@@ -278,7 +287,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 firstBuyOrder.order,
                 CL_ORD_ID, ORDER_QTY, PRICE, SECONDARY_CL_ORD_ID,
             ).addFields(
-                TRANSACT_TIME to now,
+                TRANSACT_TIME to handleTimestamp,
                 CUM_QTY to cumQty2,
                 LAST_PX to firstBuyOrder.order.getField(PRICE),
                 ORDER_ID to firstBuyOrder.orderId,
@@ -317,7 +326,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         val trader2Order3Er1 = trader2Order3.toBuilder()
             .addFields(
-                TRANSACT_TIME to now,
+                TRANSACT_TIME to handleTimestamp,
                 LAST_PX to order2Price,
                 CUM_QTY to cumQty1,
                 LEAVES_QTY to sellOrder.order.getInt(ORDER_QTY)!! - cumQty1,
@@ -332,7 +341,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         // ER2 PF Order3 for Trader2
         val trader2Order3Er2 = trader2Order3.toBuilder().addFields(
-            TRANSACT_TIME to now,
+            TRANSACT_TIME to handleTimestamp,
             LAST_PX to order1Price,
             CUM_QTY to cumQty1 + cumQty2,
             LEAVES_QTY to leavesQty2,
@@ -358,7 +367,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             // Extra ER3 FF Order3 for Trader2 as testcase
             val trader2Order3fixX = trader2.toBuilder()
                 .addFields(
-                    TRANSACT_TIME to now,
+                    TRANSACT_TIME to handleTimestamp,
                     TRADING_PARTY to noPartyIdsTrader2Order3,
                     EXEC_TYPE to "F",
                     AGGRESSOR_INDICATOR to "Y",
@@ -378,7 +387,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         val trader2Order3Er3CC = trader2.toBuilder()
             .copyFields(sellOrder.order, TRADING_PARTY)
             .addFields(
-                TRANSACT_TIME to now,
+                TRANSACT_TIME to handleTimestamp,
                 EXEC_TYPE to "C",
                 ORD_STATUS to "C",
                 CUM_QTY to cumQty1 + cumQty2,
@@ -451,10 +460,12 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
     }
 }
 
-private data class BookRecord(val orderId: Int, val order: ParsedMessage)
+private data class BookRecord(val orderId: Int, val timestamp: Instant, val order: ParsedMessage)
 
 @Suppress("unused")
-private class Book {
+private class Book(
+    private val log: BookLog?
+) {
     private val lock = ReentrantLock()
     private val buy: Queue<BookRecord> = LinkedList()
     private val sell: Queue<BookRecord> = LinkedList()
@@ -471,11 +482,11 @@ private class Book {
     val sellIsEmpty: Boolean
         get() = sell.isEmpty()
 
-    fun addBuy(record: BookRecord) = lock.withLock { buy.add(record) }
-    fun addSell(record: BookRecord) = lock.withLock { sell.add(record) }
+    fun addBuy(record: BookRecord) = lock.withLock { buy.add(record.log(ADD, SIDE_BUY)) }
+    fun addSell(record: BookRecord) = lock.withLock { sell.add(record.log(ADD, SIDE_SELL)) }
 
-    fun pullBuy(): BookRecord = lock.withLock { buy.remove() }
-    fun pullSell(): BookRecord = lock.withLock { sell.remove() }
+    fun pullBuy(): BookRecord = lock.withLock { buy.remove().log(DELETE, SIDE_BUY) }
+    fun pullSell(): BookRecord = lock.withLock { sell.remove().log(DELETE, SIDE_SELL) }
 
     fun calcQtyBuy(): Int = lock.withLock { calcQty(buy) }
 
@@ -485,6 +496,13 @@ private class Book {
     inline fun withLock(func: Book.() -> Unit) {
         contract { callsInPlace(func, InvocationKind.EXACTLY_ONCE) }
         lock.withLock { func() }
+    }
+
+    private fun BookRecord.log(action: Action, side: String): BookRecord = this.also {
+        log?.log(
+            action, timestamp, order.getString(CL_ORD_ID), orderId.toString(), order.getString(SECURITY_ID),
+            side, order.getString(PRICE), order.getString(ORDER_QTY)
+        )
     }
 
     companion object {
@@ -497,19 +515,32 @@ private enum class Action {
     DELETE,
 }
 
-private class CsvWriter(path: Path) {
-    private val writer = CSVWriter(FileWriter("output.csv"))
+private interface BookLog {
+    fun log(
+        action: Action,
+        transactTime: Instant,
+        clOrdID: String?,
+        ordID: String?,
+        instrument: String?,
+        side: String?,
+        price: String?,
+        qty: String?,
+    )
+}
+
+private class CsvBookLog(path: Path): BookLog {
+    private val writer = CSVWriter(FileWriter(path.toFile()))
 
     init {
         writer.writeNext(arrayOf("Action", "TransactTime", "ClOrdID", "OrdID", "Instrument", "Side", "Price", "Qty"))
         writer.flush()
     }
 
-    fun write(
+    override fun log(
         action: Action,
         transactTime: Instant,
         clOrdID: String?,
-        ordID: String,
+        ordID: String?,
         instrument: String?,
         side: String?,
         price: String?,
@@ -517,5 +548,31 @@ private class CsvWriter(path: Path) {
     ) {
         writer.writeNext(arrayOf(action.name, transactTime.toString(), clOrdID, ordID, instrument, side, price, qty))
         writer.flush()
+    }
+
+    companion object {
+        private const val CSV_EXTENSION = "csv"
+
+        fun createCsvBookLog(dirPath: Path?, pattern: String?): BookLog? {
+            if (dirPath == null || pattern == null) return null
+            if (dirPath.notExists()) dirPath.createDirectories()
+            dirPath.listDirectoryEntries()
+                .filter { it.name.startsWith(pattern) && it.extension == CSV_EXTENSION }
+                .sortedByDescending { Files.getLastModifiedTime(it).toInstant() }
+                .drop(1)
+                .forEach {
+                    try {
+                        Files.delete(it)
+                        LOGGER.info { "removed file: $it" }
+                    } catch (e: Exception) {
+                        LOGGER.error(e) { "removing file: $it failure" }
+                    }
+                }
+
+            val bookLogFile = dirPath.resolve("$pattern-${System.currentTimeMillis()}.$CSV_EXTENSION")
+            return CsvBookLog(bookLogFile).also {
+                LOGGER.info { "created book log for file $bookLogFile" }
+            }
+        }
     }
 }

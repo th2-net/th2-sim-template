@@ -16,7 +16,9 @@ dependencies {
     implementation(libs.th2.common)
     implementation(libs.th2.common.utils)
     implementation(libs.th2.sim)
+
     implementation(libs.opencsv)
+    implementation(libs.kotlin.logging)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation("org.junit.jupiter:junit-jupiter")
