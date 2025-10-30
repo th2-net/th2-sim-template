@@ -52,14 +52,23 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ### 4.2.0
 
-+ Migrate to th2 gradle plugin `0.3.8` (bom: `4.14.1`)
++ Migrate to th2 gradle plugin `0.3.10` (bom: `4.14.2`)
 + [[GH-41] Use `TemplateFixRuleCreate.session_aliases` gRPC field for getting map internal rule key to session alias](https://github.com/th2-net/th2-sim-template/issues/41)
-+ Updated GitHub workflows
++ [[GH-49] KotlinFIXRule enhancement](https://github.com/th2-net/th2-sim-template/issues/49)
+  + Used single transact time for handling messages
+  + Implemented independent handling for different instruments
+  + Set `AggressorIndicator` field to `ExecutionReport` with `ExecType` trade
+  + Optionally store book log to CSV file. System properties can be specified in `JAVA_TOOL_OPTIONS` using `-D` prefix
+    + `th2.sim.kotlin-fix-rule.book-log.dir` - folder for storing log in `CSV` format
+    + `th2.sim.kotlin-fix-rule.book-log.pattern` - file name pattern like `book-log`
 + Updated:
-  + kotlin: `2.2.10`
+  + kotlin: `2.2.21`
   + common: `5.16.1-dev`
   + common-utils: `2.4.0-dev`
   + grpc-sim-template: `3.5.0-dev`
++ Added libs:
+  + opencsv: `5.12.0`
+  + kotlin-logging: `7.0.12`
 
 ### 4.1.0
 

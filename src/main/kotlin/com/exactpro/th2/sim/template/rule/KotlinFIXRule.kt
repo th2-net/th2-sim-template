@@ -66,7 +66,6 @@ import com.exactpro.th2.sim.template.FixFields.Companion.TRD_MATCH_ID
 import com.exactpro.th2.sim.template.FixValues.Companion.BUSINESS_REJECT_REASON_UNKNOWN_SECURITY
 import com.exactpro.th2.sim.template.FixValues.Companion.SESSION_REJECT_REASON_REQUIRED_TAG_MISSING
 import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_BUY
-import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_SELL
 import com.exactpro.th2.sim.template.rule.Action.ADD
 import com.exactpro.th2.sim.template.rule.Action.DELETE
 import com.opencsv.CSVWriter
