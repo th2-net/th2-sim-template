@@ -8,6 +8,12 @@ th2-common-utils = { group = "com.exactpro.th2", name = "common-utils", version 
 th2-sim = { group = "com.exactpro.th2", name = "sim", version = "7.1.0-dev" }
 th2-grpc-sim-template = { group = "com.exactpro.th2", name = "grpc-sim-template", version = "3.5.1" }
 
+opencsv = { group = "com.opencsv", name = "opencsv", version = "5.12.0" }
+kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version = "7.0.12" }
+
+junit-bom = { group = "org.junit", name = "junit-bom", version = "5.13.4" }
+strikt-core = { group = "io.strikt", name = "strikt-core", version = "0.34.1" }
+
 [plugins]
 th2-component = { id = "com.exactpro.th2.gradle.component", version.ref = "th2-plugin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
