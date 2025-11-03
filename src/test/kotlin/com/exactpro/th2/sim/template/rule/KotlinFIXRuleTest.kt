@@ -146,34 +146,67 @@ class KotlinFIXRuleTest {
     }
 
     @Test
-    fun `one buy one sell for test-security with book log test`(@TempDir tempDir: Path) {
+    fun `two buy one sell for test-security with book log test`(@TempDir tempDir: Path) {
         val pattern = "test-file"
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
 
         testRule {
             val rule = createRule()
-            val buy = buildMessage(SIDE_BUY, "test-security")
-            val sell = buildMessage(SIDE_SELL, "test-security")
-            rule.assertHandle(buy)
-            rule.assertHandle(sell)
+            val buy1 = buildMessage(SIDE_BUY, "test-security")
+            val buy2 = buildMessage(SIDE_BUY, "test-security")
+            val sell1 = buildMessage(SIDE_SELL, "test-security")
 
-            var buyEr: ParsedMessage? = null
-            var sellEr: ParsedMessage? = null
+            rule.assertHandle(buy1)
+            rule.assertHandle(buy2)
+            rule.assertHandle(sell1)
+
+            var buyEr1: ParsedMessage? = null
+            var buyEr2: ParsedMessage? = null
+            var sellEr1: ParsedMessage? = null
 
             assertSent(BUILDER_CLASS) { msg ->
-                buyEr = msg.build()
-                expectNewBuyIsPlaced(buy, msg, ALIAS_1, orderId = 1, execId = 1)
+                buyEr1 = msg.build()
+                expectNewBuyIsPlaced(buy1, msg, ALIAS_1, orderId = 1, execId = 1)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectNewBuyIsPlaced(buy, msg, DC_ALIAS_1, orderId = 1, execId = 2) // execId looks as bag
+                expectNewBuyIsPlaced(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 2) // execId looks as bag
             }
             assertSent(BUILDER_CLASS) { msg ->
-                sellEr = msg.build()
-                expectOrderExpired(sell, buy, null, msg, ALIAS_2, orderId = 2, execId = 3)
+                buyEr2 = msg.build()
+                expectNewBuyIsPlaced(buy2, msg, ALIAS_1, orderId = 2, execId = 3)
+            }
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 4) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy2, msg, ALIAS_1, orderId = 2, execId = 5, matchId = 1)
             }
             assertSent(BUILDER_CLASS) { msg ->
-                expectOrderExpired(sell, buy, null, msg, DC_ALIAS_2, orderId = 2, execId = 3)
+                expectOrderFullFilled(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 5, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy1, msg, ALIAS_1, orderId = 1, execId = 6, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderFullFilled(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 6, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy2, null, msg, ALIAS_2, orderId = 3, execId = 7, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy2, null, msg, DC_ALIAS_2, orderId = 3, execId = 7, matchId = 1)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy1, buy2, msg, ALIAS_2, orderId = 3, execId = 8, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderPartiallyTraded(sell1, buy1, buy2, msg, DC_ALIAS_2, orderId = 3, execId = 8, matchId = 2)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                sellEr1 = msg.build()
+                expectOrderExpired(sell1, buy1, buy2, msg, ALIAS_2, orderId = 3, execId = 9)
+            }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell1, buy1, buy2, msg, DC_ALIAS_2, orderId = 3, execId = 9)
             }
             assertNothingSent()
 
@@ -181,7 +214,7 @@ class KotlinFIXRuleTest {
             assertEquals(1, files.size, "check size")
             val lines = CSVReader(FileReader(files.single().toFile())).use(CSVReader::readAll)
             expectThat(lines) {
-                get { size } isEqualTo 4
+                get { size } isEqualTo 7
                 get { get(0) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "Action"
@@ -196,35 +229,68 @@ class KotlinFIXRuleTest {
                 get { get(1) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "ADD"
-                    get { get(1) } isEqualTo buyEr?.body[TRANSACT_TIME]?.toString()
-                    get { get(2) } isEqualTo buy.body[CL_ORD_ID]?.toString()
-                    get { get(3) } isEqualTo buyEr?.body[ORDER_ID]?.toString()
-                    get { get(4) } isEqualTo buy.body[SECURITY_ID]?.toString()
+                    get { get(1) } isEqualTo buyEr1?.body[TRANSACT_TIME]?.toString()
+                    get { get(2) } isEqualTo buy1.body[CL_ORD_ID]?.toString()
+                    get { get(3) } isEqualTo buyEr1?.body[ORDER_ID]?.toString()
+                    get { get(4) } isEqualTo buy1.body[SECURITY_ID]?.toString()
                     get { get(5) } isEqualTo "BUY"
-                    get { get(6) } isEqualTo buy.body[PRICE]?.toString()
-                    get { get(7) } isEqualTo buy.body[ORDER_QTY]?.toString()
+                    get { get(6) } isEqualTo buy1.body[PRICE]?.toString()
+                    get { get(7) } isEqualTo buy1.body[ORDER_QTY]?.toString()
                 }
                 get { get(2) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "ADD"
-                    get { get(1) } isEqualTo sellEr?.body[TRANSACT_TIME]?.toString()
-                    get { get(2) } isEqualTo sell.body[CL_ORD_ID]?.toString()
-                    get { get(3) } isEqualTo sellEr?.body[ORDER_ID]?.toString()
-                    get { get(4) } isEqualTo sell.body[SECURITY_ID]?.toString()
-                    get { get(5) } isEqualTo "SELL"
-                    get { get(6) } isEqualTo sell.body[PRICE]?.toString()
-                    get { get(7) } isEqualTo sell.body[ORDER_QTY]?.toString()
+                    get { get(1) } isEqualTo buyEr2?.body[TRANSACT_TIME]?.toString()
+                    get { get(2) } isEqualTo buy2.body[CL_ORD_ID]?.toString()
+                    get { get(3) } isEqualTo buyEr2?.body[ORDER_ID]?.toString()
+                    get { get(4) } isEqualTo buy2.body[SECURITY_ID]?.toString()
+                    get { get(5) } isEqualTo "BUY"
+                    get { get(6) } isEqualTo buy2.body[PRICE]?.toString()
+                    get { get(7) } isEqualTo buy2.body[ORDER_QTY]?.toString()
                 }
                 get { get(3) } and {
                     get { size } isEqualTo 8
-                    get { get(0) } isEqualTo "DELETE"
-                    get { get(1) } isEqualTo sellEr?.body[TRANSACT_TIME]?.toString()
-                    get { get(2) } isEqualTo sell.body[CL_ORD_ID]?.toString()
-                    get { get(3) } isEqualTo sellEr?.body[ORDER_ID]?.toString()
-                    get { get(4) } isEqualTo sell.body[SECURITY_ID]?.toString()
+                    get { get(0) } isEqualTo "ADD"
+                    get { get(1) } isEqualTo sellEr1?.body[TRANSACT_TIME]?.toString()
+                    get { get(2) } isEqualTo sell1.body[CL_ORD_ID]?.toString()
+                    get { get(3) } isEqualTo sellEr1?.body[ORDER_ID]?.toString()
+                    get { get(4) } isEqualTo sell1.body[SECURITY_ID]?.toString()
                     get { get(5) } isEqualTo "SELL"
-                    get { get(6) } isEqualTo sell.body[PRICE]?.toString()
-                    get { get(7) } isEqualTo sell.body[ORDER_QTY]?.toString()
+                    get { get(6) } isEqualTo sell1.body[PRICE]?.toString()
+                    get { get(7) } isEqualTo sell1.body[ORDER_QTY]?.toString()
+                }
+                get { get(4) } and {
+                    get { size } isEqualTo 8
+                    get { get(0) } isEqualTo "DELETE"
+                    get { get(1) } isEqualTo sellEr1?.body[TRANSACT_TIME]?.toString()
+                    get { get(2) } isEqualTo sell1.body[CL_ORD_ID]?.toString()
+                    get { get(3) } isEqualTo sellEr1?.body[ORDER_ID]?.toString()
+                    get { get(4) } isEqualTo sell1.body[SECURITY_ID]?.toString()
+                    get { get(5) } isEqualTo "SELL"
+                    get { get(6) } isEqualTo sell1.body[PRICE]?.toString()
+                    get { get(7) } isEqualTo sell1.body[ORDER_QTY]?.toString()
+                }
+                get { get(5) } and {
+                    get { size } isEqualTo 8
+                    get { get(0) } isEqualTo "DELETE"
+                    get { get(1) } isEqualTo buyEr1?.body[TRANSACT_TIME]?.toString()
+                    get { get(2) } isEqualTo buy1.body[CL_ORD_ID]?.toString()
+                    get { get(3) } isEqualTo buyEr1?.body[ORDER_ID]?.toString()
+                    get { get(4) } isEqualTo buy1.body[SECURITY_ID]?.toString()
+                    get { get(5) } isEqualTo "BUY"
+                    get { get(6) } isEqualTo buy1.body[PRICE]?.toString()
+                    get { get(7) } isEqualTo buy1.body[ORDER_QTY]?.toString()
+                }
+                get { get(6) } and {
+                    get { size } isEqualTo 8
+                    get { get(0) } isEqualTo "DELETE"
+                    get { get(1) } isEqualTo buyEr2?.body[TRANSACT_TIME]?.toString()
+                    get { get(2) } isEqualTo buy2.body[CL_ORD_ID]?.toString()
+                    get { get(3) } isEqualTo buyEr2?.body[ORDER_ID]?.toString()
+                    get { get(4) } isEqualTo buy2.body[SECURITY_ID]?.toString()
+                    get { get(5) } isEqualTo "BUY"
+                    get { get(6) } isEqualTo buy2.body[PRICE]?.toString()
+                    get { get(7) } isEqualTo buy2.body[ORDER_QTY]?.toString()
                 }
             }
         }
