@@ -78,7 +78,6 @@ import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_SELL
 import com.exactpro.th2.sim.template.FixValues.Companion.TIME_IN_FORCE_DAY
 import com.exactpro.th2.sim.template.rule.test.api.TestRuleContext.Companion.testRule
 import com.opencsv.CSVReader
-import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -179,71 +178,55 @@ class KotlinFIXRuleTest {
             assertNothingSent()
 
             val files = tempDir.listDirectoryEntries().toList()
-            assertAll(
-                { assertEquals(1, files.size, "check size") },
-                {
-                    val lines = CSVReader(FileReader(files.single().toFile())).readAll()
-                    assertAll(
-                        { assertEquals(4, lines.size, "check lines") },
-                        {
-                            assertArrayEquals(
-                                arrayOf(
-                                    "Action",
-                                    "TransactTime",
-                                    "ClOrdID",
-                                    "OrdID",
-                                    "Instrument",
-                                    "Side",
-                                    "Price",
-                                    "Qty"
-                                ), lines[0], "check line 0"
-                            )
-                        },
-                        {
-                            assertArrayEquals(
-                                arrayOf(
-                                    "ADD",
-                                    buyEr?.body[TRANSACT_TIME]?.toString(),
-                                    buy.body[CL_ORD_ID],
-                                    buyEr?.body[ORDER_ID]?.toString(),
-                                    buy.body[SECURITY_ID],
-                                    "BUY",
-                                    buy.body[PRICE]?.toString(),
-                                    buy.body[ORDER_QTY]?.toString(),
-                                ), lines[1], "check line 1"
-                            )
-                        },
-                        {
-                            assertArrayEquals(
-                                arrayOf(
-                                    "ADD",
-                                    sellEr?.body[TRANSACT_TIME]?.toString(),
-                                    sell.body[CL_ORD_ID],
-                                    sellEr?.body[ORDER_ID]?.toString(),
-                                    sell.body[SECURITY_ID],
-                                    "SELL",
-                                    sell.body[PRICE]?.toString(),
-                                    sell.body[ORDER_QTY]?.toString(),
-                                ), lines[2], "check line 2"
-                            )
-                        },
-                        {
-                            assertArrayEquals(
-                                arrayOf(
-                                    "DELETE",
-                                    sellEr?.body[TRANSACT_TIME]?.toString(),
-                                    sell.body[CL_ORD_ID],
-                                    sellEr?.body[ORDER_ID]?.toString(),
-                                    sell.body[SECURITY_ID],
-                                    "SELL",
-                                    sell.body[PRICE]?.toString(),
-                                    sell.body[ORDER_QTY]?.toString(),
-                                ), lines[3], "check line 3"
-                            )
-                        },
-                    )
-                },
-            )
+            assertEquals(1, files.size, "check size")
+            val lines = CSVReader(FileReader(files.single().toFile())).use(CSVReader::readAll)
+            expectThat(lines) {
+                get { size } isEqualTo 4
+                get { get(0) } and {
+                    get { size } isEqualTo 8
+                    get { get(0) } isEqualTo "Action"
+                    get { get(1) } isEqualTo "TransactTime"
+                    get { get(2) } isEqualTo "ClOrdID"
+                    get { get(3) } isEqualTo "OrdID"
+                    get { get(4) } isEqualTo "Instrument"
+                    get { get(5) } isEqualTo "Side"
+                    get { get(6) } isEqualTo "Price"
+                    get { get(7) } isEqualTo "Qty"
+                }
+                get { get(1) } and {
+                    get { size } isEqualTo 8
+                    get { get(0) } isEqualTo "ADD"
+                    get { get(1) } isEqualTo buyEr?.body[TRANSACT_TIME]?.toString()
+                    get { get(2) } isEqualTo buy.body[CL_ORD_ID]?.toString()
+                    get { get(3) } isEqualTo buyEr?.body[ORDER_ID]?.toString()
+                    get { get(4) } isEqualTo buy.body[SECURITY_ID]?.toString()
+                    get { get(5) } isEqualTo "BUY"
+                    get { get(6) } isEqualTo buy.body[PRICE]?.toString()
+                    get { get(7) } isEqualTo buy.body[ORDER_QTY]?.toString()
+                }
+                get { get(2) } and {
+                    get { size } isEqualTo 8
+                    get { get(0) } isEqualTo "ADD"
+                    get { get(1) } isEqualTo sellEr?.body[TRANSACT_TIME]?.toString()
+                    get { get(2) } isEqualTo sell.body[CL_ORD_ID]?.toString()
+                    get { get(3) } isEqualTo sellEr?.body[ORDER_ID]?.toString()
+                    get { get(4) } isEqualTo sell.body[SECURITY_ID]?.toString()
+                    get { get(5) } isEqualTo "SELL"
+                    get { get(6) } isEqualTo sell.body[PRICE]?.toString()
+                    get { get(7) } isEqualTo sell.body[ORDER_QTY]?.toString()
+                }
+                get { get(3) } and {
+                    get { size } isEqualTo 8
+                    get { get(0) } isEqualTo "DELETE"
+                    get { get(1) } isEqualTo sellEr?.body[TRANSACT_TIME]?.toString()
+                    get { get(2) } isEqualTo sell.body[CL_ORD_ID]?.toString()
+                    get { get(3) } isEqualTo sellEr?.body[ORDER_ID]?.toString()
+                    get { get(4) } isEqualTo sell.body[SECURITY_ID]?.toString()
+                    get { get(5) } isEqualTo "SELL"
+                    get { get(6) } isEqualTo sell.body[PRICE]?.toString()
+                    get { get(7) } isEqualTo sell.body[ORDER_QTY]?.toString()
+                }
+            }
         }
     }
 
