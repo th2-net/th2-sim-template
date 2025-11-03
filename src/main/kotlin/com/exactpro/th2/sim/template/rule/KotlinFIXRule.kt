@@ -158,7 +158,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         val incomeOrderId = orderId.incrementAndGet()
         val book = books.computeIfAbsent(instrument) { Book(bookLog) }
         if (message.getString(SIDE) == SIDE_BUY) {
-            book.addBuy(BookRecord(incomeOrderId, handleTimestamp, message))
+            book.addBuy(incomeOrderId, handleTimestamp, message)
             val fixNew = message("ExecutionReport")
                 .copyFields(
                     message,
@@ -185,7 +185,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                     .with(sessionAlias = aliases[KEY_DC_ALIAS_1])
             )
         } else {
-            book.addSell(BookRecord(incomeOrderId, handleTimestamp, message))
+            book.addSell(incomeOrderId, handleTimestamp, message)
         }
 
         val sellOrder: BookRecord
@@ -196,7 +196,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             if (buySize < 2 || sellIsEmpty) {
                 // we don't have enough orders for matching
                 if (!sellIsEmpty) {
-                    sellOrder = pullSell()
+                    sellOrder = pullSell(handleTimestamp)
                     val expired = message("ExecutionReport")
                         .copyFields(
                             sellOrder.order,
@@ -220,9 +220,9 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 return
             }
             // Useful variables for buy-side
-            sellOrder = pullSell()
-            firstBuyOrder = pullBuy()
-            secondBuyOrder = pullBuy()
+            sellOrder = pullSell(handleTimestamp)
+            firstBuyOrder = pullBuy(handleTimestamp)
+            secondBuyOrder = pullBuy(handleTimestamp)
         }
 
         val cumQty1 = secondBuyOrder.order.getInt(ORDER_QTY)!!
@@ -481,11 +481,13 @@ private class Book(
     val sellIsEmpty: Boolean
         get() = sell.isEmpty()
 
-    fun addBuy(record: BookRecord) = lock.withLock { buy.add(record.log(ADD, "BUY")) }
-    fun addSell(record: BookRecord) = lock.withLock { sell.add(record.log(ADD, "SELL")) }
+    fun addBuy(orderId: Int, timestamp: Instant, order: ParsedMessage) =
+        lock.withLock { buy.add(BookRecord(orderId, timestamp, order).log(ADD, timestamp, "BUY")) }
+    fun addSell(orderId: Int, timestamp: Instant, order: ParsedMessage) =
+        lock.withLock { sell.add(BookRecord(orderId, timestamp, order).log(ADD, timestamp, "SELL")) }
 
-    fun pullBuy(): BookRecord = lock.withLock { buy.remove().log(DELETE, "BUY") }
-    fun pullSell(): BookRecord = lock.withLock { sell.remove().log(DELETE, "SELL") }
+    fun pullBuy(timestamp: Instant): BookRecord = lock.withLock { buy.remove().log(DELETE, timestamp, "BUY") }
+    fun pullSell(timestamp: Instant): BookRecord = lock.withLock { sell.remove().log(DELETE, timestamp, "SELL") }
 
     fun calcQtyBuy(): Int = lock.withLock { calcQty(buy) }
 
@@ -497,7 +499,7 @@ private class Book(
         lock.withLock { func() }
     }
 
-    private fun BookRecord.log(action: Action, side: String): BookRecord = this.also {
+    private fun BookRecord.log(action: Action, timestamp: Instant, side: String): BookRecord = this.also {
         log?.log(
             action, timestamp, order.getString(CL_ORD_ID), orderId.toString(), order.getString(SECURITY_ID),
             side, order.getString(PRICE), order.getString(ORDER_QTY)
@@ -527,7 +529,7 @@ private interface BookLog {
     )
 }
 
-private class CsvBookLog(path: Path): BookLog {
+private class CsvBookLog(path: Path) : BookLog {
     private val writer = CSVWriter(FileWriter(path.toFile()))
 
     init {

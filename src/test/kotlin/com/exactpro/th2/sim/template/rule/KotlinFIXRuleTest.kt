@@ -92,6 +92,7 @@ import strikt.api.Assertion
 import strikt.api.expectThat
 import strikt.assertions.isA
 import strikt.assertions.isEqualTo
+import strikt.assertions.isGreaterThan
 import strikt.assertions.isNotNull
 import java.io.FileReader
 import java.nio.file.Path
@@ -157,13 +158,23 @@ class KotlinFIXRuleTest {
             val buy2 = buildMessage(SIDE_BUY, "test-security")
             val sell1 = buildMessage(SIDE_SELL, "test-security")
 
+            val timestamp1 = Instant.now()
             rule.assertHandle(buy1)
+
+            Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+            val timestamp2 = Instant.now()
             rule.assertHandle(buy2)
+
+            Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+            val timestamp3 = Instant.now()
             rule.assertHandle(sell1)
 
             var buyEr1: ParsedMessage? = null
+            var buyTrd1: ParsedMessage? = null
             var buyEr2: ParsedMessage? = null
+            var buyTrd2: ParsedMessage? = null
             var sellEr1: ParsedMessage? = null
+            var sellTrd1: ParsedMessage? = null
 
             assertSent(BUILDER_CLASS) { msg ->
                 buyEr1 = msg.build()
@@ -178,18 +189,21 @@ class KotlinFIXRuleTest {
             }
             assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 4) }
             assertSent(BUILDER_CLASS) { msg ->
+                buyTrd2 = msg.build()
                 expectOrderFullFilled(buy2, msg, ALIAS_1, orderId = 2, execId = 5, matchId = 1)
             }
             assertSent(BUILDER_CLASS) { msg ->
                 expectOrderFullFilled(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 5, matchId = 1)
             }
             assertSent(BUILDER_CLASS) { msg ->
+                buyTrd1 = msg.build()
                 expectOrderFullFilled(buy1, msg, ALIAS_1, orderId = 1, execId = 6, matchId = 2)
             }
             assertSent(BUILDER_CLASS) { msg ->
                 expectOrderFullFilled(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 6, matchId = 2)
             }
             assertSent(BUILDER_CLASS) { msg ->
+                sellTrd1 = msg.build()
                 expectOrderPartiallyTraded(sell1, buy2, null, msg, ALIAS_2, orderId = 3, execId = 7, matchId = 1)
             }
             assertSent(BUILDER_CLASS) { msg ->
@@ -210,6 +224,13 @@ class KotlinFIXRuleTest {
             }
             assertNothingSent()
 
+            println(buy1.body[TRANSACT_TIME])
+            println(buy2.body[TRANSACT_TIME])
+            println(sell1.body[TRANSACT_TIME])
+            println(buyEr1?.body[TRANSACT_TIME])
+            println(buyEr2?.body[TRANSACT_TIME])
+            println(sellEr1?.body[TRANSACT_TIME])
+
             val files = tempDir.listDirectoryEntries().toList()
             assertEquals(1, files.size, "check size")
             val lines = CSVReader(FileReader(files.single().toFile())).use(CSVReader::readAll)
@@ -229,7 +250,9 @@ class KotlinFIXRuleTest {
                 get { get(1) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "ADD"
-                    get { get(1) } isEqualTo buyEr1?.body[TRANSACT_TIME]?.toString()
+                    get { get(1) } isEqualTo buyEr1?.body[TRANSACT_TIME]?.toString() and {
+                        get { Instant.parse(this) }.isGreaterThan(timestamp1)
+                    }
                     get { get(2) } isEqualTo buy1.body[CL_ORD_ID]?.toString()
                     get { get(3) } isEqualTo buyEr1?.body[ORDER_ID]?.toString()
                     get { get(4) } isEqualTo buy1.body[SECURITY_ID]?.toString()
@@ -240,7 +263,9 @@ class KotlinFIXRuleTest {
                 get { get(2) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "ADD"
-                    get { get(1) } isEqualTo buyEr2?.body[TRANSACT_TIME]?.toString()
+                    get { get(1) } isEqualTo buyEr2?.body[TRANSACT_TIME]?.toString() and {
+                        get { Instant.parse(this) }.isGreaterThan(timestamp2)
+                    }
                     get { get(2) } isEqualTo buy2.body[CL_ORD_ID]?.toString()
                     get { get(3) } isEqualTo buyEr2?.body[ORDER_ID]?.toString()
                     get { get(4) } isEqualTo buy2.body[SECURITY_ID]?.toString()
@@ -251,7 +276,9 @@ class KotlinFIXRuleTest {
                 get { get(3) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "ADD"
-                    get { get(1) } isEqualTo sellEr1?.body[TRANSACT_TIME]?.toString()
+                    get { get(1) } isEqualTo sellEr1?.body[TRANSACT_TIME]?.toString() and {
+                        get { Instant.parse(this) }.isGreaterThan(timestamp3)
+                    }
                     get { get(2) } isEqualTo sell1.body[CL_ORD_ID]?.toString()
                     get { get(3) } isEqualTo sellEr1?.body[ORDER_ID]?.toString()
                     get { get(4) } isEqualTo sell1.body[SECURITY_ID]?.toString()
@@ -262,7 +289,9 @@ class KotlinFIXRuleTest {
                 get { get(4) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "DELETE"
-                    get { get(1) } isEqualTo sellEr1?.body[TRANSACT_TIME]?.toString()
+                    get { get(1) } isEqualTo sellTrd1?.body[TRANSACT_TIME]?.toString() and {
+                        get { Instant.parse(this) }.isGreaterThan(timestamp3)
+                    }
                     get { get(2) } isEqualTo sell1.body[CL_ORD_ID]?.toString()
                     get { get(3) } isEqualTo sellEr1?.body[ORDER_ID]?.toString()
                     get { get(4) } isEqualTo sell1.body[SECURITY_ID]?.toString()
@@ -273,7 +302,9 @@ class KotlinFIXRuleTest {
                 get { get(5) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "DELETE"
-                    get { get(1) } isEqualTo buyEr1?.body[TRANSACT_TIME]?.toString()
+                    get { get(1) } isEqualTo buyTrd1?.body[TRANSACT_TIME]?.toString() and {
+                        get { Instant.parse(this) }.isGreaterThan(timestamp3)
+                    }
                     get { get(2) } isEqualTo buy1.body[CL_ORD_ID]?.toString()
                     get { get(3) } isEqualTo buyEr1?.body[ORDER_ID]?.toString()
                     get { get(4) } isEqualTo buy1.body[SECURITY_ID]?.toString()
@@ -284,7 +315,9 @@ class KotlinFIXRuleTest {
                 get { get(6) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "DELETE"
-                    get { get(1) } isEqualTo buyEr2?.body[TRANSACT_TIME]?.toString()
+                    get { get(1) } isEqualTo buyTrd2?.body[TRANSACT_TIME]?.toString() and {
+                        get { Instant.parse(this) }.isGreaterThan(timestamp3)
+                    }
                     get { get(2) } isEqualTo buy2.body[CL_ORD_ID]?.toString()
                     get { get(3) } isEqualTo buyEr2?.body[ORDER_ID]?.toString()
                     get { get(4) } isEqualTo buy2.body[SECURITY_ID]?.toString()
