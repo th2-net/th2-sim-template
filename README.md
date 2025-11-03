@@ -50,6 +50,11 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ## Release notes
 
+### 4.2.1
+
++ [[GH-49] KotlinFIXRule enhancement](https://github.com/th2-net/th2-sim-template/issues/49)
+  + Fixed: use handle timestamp for `TransactTime` CSV field
+
 ### 4.2.0
 
 + Migrate to th2 gradle plugin `0.3.10` (bom: `4.14.2`)
