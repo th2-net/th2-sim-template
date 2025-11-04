@@ -12,7 +12,7 @@ opencsv = { group = "com.opencsv", name = "opencsv", version = "5.12.0" }
 kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version = "7.0.13" }
 
 junit-bom = { group = "org.junit", name = "junit-bom", version = "5.14.1" }
-strikt-core = { group = "io.strikt", name = "strikt-core", version = "0.34.1" }
+strikt-core = { group = "io.strikt", name = "strikt-core", version = "0.35.1" }
 
 [plugins]
 th2-component = { id = "com.exactpro.th2.gradle.component", version.ref = "th2-plugin" }
