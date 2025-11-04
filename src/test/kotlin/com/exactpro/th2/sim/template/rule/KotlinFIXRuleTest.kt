@@ -106,13 +106,15 @@ import kotlin.random.Random
 
 
 class KotlinFIXRuleTest {
+    private val rule = createRule()
+
     @BeforeEach
     fun beforeEach() {
-        KotlinFIXRule.reset()
+        testRule { rule.touch(this, mapOf("action" to "rEsEt")) }
     }
 
     @Test
-    fun `csv book writer remove old files test`(@TempDir tempDir: Path) {
+    fun `csv book writer remove old files after create new rule test`(@TempDir tempDir: Path) {
         val pattern = "test-file"
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
@@ -130,6 +132,83 @@ class KotlinFIXRuleTest {
         )
 
         createRule()
+//        testRule { rule.touch(this, mapOf("action" to "reset")) }
+
+        assertAll(
+            { assertFalse(fileD.exists(), "file-D") },
+            { assertFalse(file2.exists(), "file-2") },
+            { assertTrue(fileA.exists(), "file-A") },
+            {
+                val files = tempDir.listDirectoryEntries().toList()
+                assertAll(
+                    { assertEquals(2, files.size, "check size of $files") },
+                    { assertTrue(files.all { it.name.startsWith(pattern) }, "check pattern in $files") },
+                    { assertTrue(files.all { it.extension == "csv" }, "check extension in $files") },
+                )
+            }
+        )
+    }
+
+    @Test
+    fun `csv book writer remove old files after reset rule test`(@TempDir tempDir: Path) {
+        val pattern = "test-file"
+        System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
+        System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
+
+        val fileD = tempDir.resolve("$pattern-d.csv").also { it.writeText("file d") }
+        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+        val file2 = tempDir.resolve("$pattern-2.csv").also { it.writeText("file 2") }
+        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+        val fileA = tempDir.resolve("$pattern-a.csv").also { it.writeText("file a") }
+
+        assertAll(
+            { assertTrue(fileD.exists(), "file-D") },
+            { assertTrue(file2.exists(), "file-2") },
+            { assertTrue(fileA.exists(), "file-A") },
+        )
+
+        testRule { rule.touch(this, mapOf("action" to "reset")) }
+
+        assertAll(
+            { assertFalse(fileD.exists(), "file-D") },
+            { assertFalse(file2.exists(), "file-2") },
+            { assertTrue(fileA.exists(), "file-A") },
+            {
+                val files = tempDir.listDirectoryEntries().toList()
+                assertAll(
+                    { assertEquals(2, files.size, "check size of $files") },
+                    { assertTrue(files.all { it.name.startsWith(pattern) }, "check pattern in $files") },
+                    { assertTrue(files.all { it.extension == "csv" }, "check extension in $files") },
+                )
+            }
+        )
+    }
+
+    @Test
+    fun `csv book writer remove old files after nos with reset text test`(@TempDir tempDir: Path) {
+        val pattern = "test-file"
+        System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
+        System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
+
+        val fileD = tempDir.resolve("$pattern-d.csv").also { it.writeText("file d") }
+        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+        val file2 = tempDir.resolve("$pattern-2.csv").also { it.writeText("file 2") }
+        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+        val fileA = tempDir.resolve("$pattern-a.csv").also { it.writeText("file a") }
+
+        assertAll(
+            { assertTrue(fileD.exists(), "file-D") },
+            { assertTrue(file2.exists(), "file-2") },
+            { assertTrue(fileA.exists(), "file-A") },
+        )
+
+        testRule {
+            val nos = buildMessage {
+                addField(TEXT, "ReSeT")
+            }
+            rule.assertHandle(nos)
+            assertNothingSent()
+        }
 
         assertAll(
             { assertFalse(fileD.exists(), "file-D") },
@@ -152,8 +231,9 @@ class KotlinFIXRuleTest {
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
 
+
         testRule {
-            val rule = createRule()
+            rule.touch(this, mapOf("action" to "reset"))
             val buy1 = buildMessage(SIDE_BUY, "test-security")
             val buy2 = buildMessage(SIDE_BUY, "test-security")
             val sell1 = buildMessage(SIDE_SELL, "test-security")
@@ -332,7 +412,6 @@ class KotlinFIXRuleTest {
     @Test
     fun `two buy one sell for test-security test`() {
         testRule {
-            val rule = createRule()
             val buy1 = buildMessage(SIDE_BUY, "test-security")
             val buy2 = buildMessage(SIDE_BUY, "test-security")
             val sell1 = buildMessage(SIDE_SELL, "test-security")
@@ -383,7 +462,6 @@ class KotlinFIXRuleTest {
     @Test
     fun `one buy two sell for test-security test`() {
         testRule {
-            val rule = createRule()
             val buy1 = buildMessage(SIDE_BUY, "test-security")
             val sell1 = buildMessage(SIDE_SELL, "test-security")
             val sell2 = buildMessage(SIDE_SELL, "test-security")
@@ -414,7 +492,6 @@ class KotlinFIXRuleTest {
     @Test
     fun `two buy one sell for two security ids test`() {
         testRule {
-            val rule = createRule()
             val buyA1 = buildMessage(SIDE_BUY, "test-security-a")
             val buyA2 = buildMessage(SIDE_BUY, "test-security-a")
             val sellA1 = buildMessage(SIDE_SELL, "test-security-a")
@@ -517,7 +594,6 @@ class KotlinFIXRuleTest {
     @Test
     fun `nos without side`() {
         testRule {
-            val rule = createRule()
             val nos = buildMessage()
             rule.assertHandle(nos)
             assertSent(BUILDER_CLASS) { msg -> expectRejected(nos, msg, 453) }
@@ -529,7 +605,6 @@ class KotlinFIXRuleTest {
     @ValueSource(strings = [SIDE_SELL, SIDE_BUY])
     fun `nos without security id`(side: String) {
         testRule {
-            val rule = createRule()
             val nos = buildMessage {
                 addField(SIDE, side)
             }
@@ -543,7 +618,6 @@ class KotlinFIXRuleTest {
     @DisplayName("test to check response of message with field SecurityID = INSTR4 and side = 1/2")
     fun `two buy one sell for INSTR4 test`() {
         testRule {
-            val rule = createRule()
             val buy1 = buildMessage(SIDE_BUY, INSTR4)
             val buy2 = buildMessage(SIDE_BUY, INSTR4)
             val sell1 = buildMessage(SIDE_SELL, INSTR4)
@@ -598,7 +672,6 @@ class KotlinFIXRuleTest {
     @DisplayName("test to check response of message with field SecurityID = INSTR5 and side = 1/2")
     fun `two buy one sell for INSTR5 test`() {
         testRule {
-            val rule = createRule()
             val buy1 = buildMessage(SIDE_BUY, INSTR5)
             val buy2 = buildMessage(SIDE_BUY, INSTR5)
             val sell1 = buildMessage(SIDE_SELL, INSTR5)
@@ -651,7 +724,6 @@ class KotlinFIXRuleTest {
     @DisplayName("test to check response of message with field SecurityID = INSTR6")
     fun `nos for INSTR6 test`(side: String) {
         testRule {
-            val rule = createRule()
             val nos = buildMessage(side, INSTR6)
             rule.assertHandle(nos)
             assertSent(BUILDER_CLASS) { msg -> expectBMRejected(nos, msg) }

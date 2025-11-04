@@ -76,13 +76,9 @@ import java.nio.file.Path
 import java.time.Instant
 import java.util.LinkedList
 import java.util.Queue
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import javax.annotation.concurrent.GuardedBy
 import kotlin.concurrent.withLock
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 import kotlin.io.path.createDirectories
 import kotlin.io.path.extension
 import kotlin.io.path.listDirectoryEntries
@@ -97,28 +93,22 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         private const val ENV_BOOK_LOG_DIR = "th2.sim.kotlin-fix-rule.book-log.dir"
         private const val ENV_BOOK_LOG_FILE_PATTERN = "th2.sim.kotlin-fix-rule.book-log.pattern"
 
+        private const val COMMAND_RESET = "reset"
+
         private const val KEY_ALIAS_1 = "ALIAS_1"
         private const val KEY_ALIAS_2 = "ALIAS_2"
         private const val KEY_DC_ALIAS_1 = "DC_ALIAS_1"
         private const val KEY_DC_ALIAS_2 = "DC_ALIAS_2"
-
-        private val orderId = AtomicInteger(0)
-        private val execId = AtomicInteger(0)
-        private val matchId = AtomicInteger(0)
-
-        private val books = ConcurrentHashMap<String, Book>()
-
-        fun reset() {
-            orderId.set(0)
-            execId.set(0)
-            matchId.set(0)
-
-            books.clear()
-        }
     }
 
+    private val lock = ReentrantLock()
+    @GuardedBy("lock") private var orderId = 0
+    @GuardedBy("lock") private var execId = 0
+    @GuardedBy("lock") private var matchId = 0
+    @GuardedBy("lock") private val books = hashMapOf<String, Book>()
+    @GuardedBy("lock") private var bookLog: BookLog? = null
+
     private val aliases: Map<String, String>
-    private val bookLog: BookLog?
 
     init {
         init("NewOrderSingle", fields)
@@ -130,15 +120,17 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             putIfAbsent(KEY_DC_ALIAS_2, "dc-demo-server2")
         }
 
-        //FIXME: several rules can affect each other
-        bookLog = CsvBookLog.createCsvBookLog(
-            System.getProperty(ENV_BOOK_LOG_DIR)?.run(Path::of),
-            System.getProperty(ENV_BOOK_LOG_FILE_PATTERN)
-        )
+        lock.withLock(::reset)
     }
 
-    override fun handle(context: IRuleContext, message: ParsedMessage) {
+    override fun handle(context: IRuleContext, message: ParsedMessage) = lock.withLock {
         val handleTimestamp = Instant.now()
+        if (message.getString(TEXT)?.equals(COMMAND_RESET, ignoreCase = true) == true) {
+            reset()
+            LOGGER.info { "${KotlinFIXRule::class.simpleName} has been reset using messages with $TEXT = $COMMAND_RESET" }
+            return
+        }
+
         if (!message.containsField(SIDE)) {
             sendReject(context, message, "453")
             return
@@ -155,7 +147,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             return
         }
 
-        val incomeOrderId = orderId.incrementAndGet()
+        val incomeOrderId = ++orderId
         val book = books.computeIfAbsent(instrument) { Book(bookLog) }
         if (message.getString(SIDE) == SIDE_BUY) {
             book.addBuy(incomeOrderId, handleTimestamp, message)
@@ -176,12 +168,12 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
             context.send(
                 fixNew.toBuilder()
-                    .addField(EXEC_ID, execId.incrementAndGet())
+                    .addField(EXEC_ID, ++execId)
                     .with(sessionAlias = aliases[KEY_ALIAS_1])
             )
             context.send(
                 fixNew.toBuilder()
-                    .addField(EXEC_ID, execId.incrementAndGet())
+                    .addField(EXEC_ID, ++execId)
                     .with(sessionAlias = aliases[KEY_DC_ALIAS_1])
             )
         } else {
@@ -192,7 +184,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         val firstBuyOrder: BookRecord
         val secondBuyOrder: BookRecord
 
-        book.withLock {
+        with(book) {
             if (buySize < 2 || sellIsEmpty) {
                 // we don't have enough orders for matching
                 if (!sellIsEmpty) {
@@ -210,7 +202,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                             CUM_QTY to calcQtyBuy(),
                             LEAVES_QTY to "0",
                             ORDER_QTY to sellOrder.order.getString(ORDER_QTY)!!,
-                            EXEC_ID to execId.incrementAndGet(),
+                            EXEC_ID to ++execId,
                             TEXT to "The remaining part of simulated order has been expired"
                         ).build()
                     context.send(expired.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_2]))
@@ -231,8 +223,8 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
         val order1Price = firstBuyOrder.order.getString(PRICE)!!
         val order2Price = secondBuyOrder.order.getString(PRICE)!!
 
-        val tradeMatchId1 = matchId.incrementAndGet()
-        val tradeMatchId2 = matchId.incrementAndGet()
+        val tradeMatchId1 = ++matchId
+        val tradeMatchId2 = ++matchId
 
         // Generator ER
         // ER FF Order2 for Trader1
@@ -273,7 +265,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 PRICE to order2Price,
                 LAST_PX to order2Price,
                 ORDER_ID to secondBuyOrder.orderId,
-                EXEC_ID to execId.incrementAndGet(),
+                EXEC_ID to ++execId,
                 TRD_MATCH_ID to tradeMatchId1
             ).build()
 
@@ -290,7 +282,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 CUM_QTY to cumQty2,
                 LAST_PX to firstBuyOrder.order.getField(PRICE),
                 ORDER_ID to firstBuyOrder.orderId,
-                EXEC_ID to execId.incrementAndGet(),
+                EXEC_ID to ++execId,
                 TRD_MATCH_ID to tradeMatchId2,
             ).build()
 
@@ -329,7 +321,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 LAST_PX to order2Price,
                 CUM_QTY to cumQty1,
                 LEAVES_QTY to sellOrder.order.getInt(ORDER_QTY)!! - cumQty1,
-                EXEC_ID to execId.incrementAndGet(),
+                EXEC_ID to ++execId,
                 TRD_MATCH_ID to tradeMatchId1,
             ).build()
 
@@ -344,7 +336,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
             LAST_PX to order1Price,
             CUM_QTY to cumQty1 + cumQty2,
             LEAVES_QTY to leavesQty2,
-            EXEC_ID to execId.incrementAndGet(),
+            EXEC_ID to ++execId,
             TRD_MATCH_ID to tradeMatchId2,
         ).build()
 
@@ -375,7 +367,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                     CUM_QTY to cumQty1 + cumQty2,
                     ORDER_QTY to sellOrder.order.getString(ORDER_QTY)!!,
                     LEAVES_QTY to leavesQty2,
-                    EXEC_ID to execId.incrementAndGet(),
+                    EXEC_ID to ++execId,
                     TRD_MATCH_ID to tradeMatchId2,
                     TEXT to "Extra Execution Report"
                 )
@@ -392,12 +384,34 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
                 CUM_QTY to cumQty1 + cumQty2,
                 LEAVES_QTY to "0",
                 ORDER_QTY to sellOrder.order.getString(ORDER_QTY)!!,
-                EXEC_ID to execId.incrementAndGet(),
+                EXEC_ID to ++execId,
                 TEXT to "The remaining part of simulated order has been expired"
             ).build()
         context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliases[KEY_ALIAS_2]))
         //DropCopy
         context.send(trader2Order3Er3CC.toBuilder().with(sessionAlias = aliases[KEY_DC_ALIAS_2]))
+    }
+
+    override fun touch(ruleContext: IRuleContext, args: Map<String, String>) {
+        super.touch(ruleContext, args)
+        if (args["action"]?.equals(COMMAND_RESET, ignoreCase = true) == true) {
+            reset()
+            LOGGER.info { "${KotlinFIXRule::class.simpleName} has been reset using touch method with args: $args" }
+        }
+    }
+
+    private fun reset() {
+        orderId = 0
+        execId = 0
+        matchId = 0
+
+        books.clear()
+
+        //FIXME: several rules can affect each other
+        bookLog = CsvBookLog.createCsvBookLog(
+            System.getProperty(ENV_BOOK_LOG_DIR)?.run(Path::of),
+            System.getProperty(ENV_BOOK_LOG_FILE_PATTERN)
+        )
     }
 
     private fun sendReject(
@@ -465,7 +479,6 @@ private data class BookRecord(val orderId: Int, val timestamp: Instant, val orde
 private class Book(
     private val log: BookLog?
 ) {
-    private val lock = ReentrantLock()
     private val buy: Queue<BookRecord> = LinkedList()
     private val sell: Queue<BookRecord> = LinkedList()
 
@@ -482,22 +495,16 @@ private class Book(
         get() = sell.isEmpty()
 
     fun addBuy(orderId: Int, timestamp: Instant, order: ParsedMessage) =
-        lock.withLock { buy.add(BookRecord(orderId, timestamp, order).log(ADD, timestamp, "BUY")) }
+         buy.add(BookRecord(orderId, timestamp, order).log(ADD, timestamp, "BUY"))
     fun addSell(orderId: Int, timestamp: Instant, order: ParsedMessage) =
-        lock.withLock { sell.add(BookRecord(orderId, timestamp, order).log(ADD, timestamp, "SELL")) }
+        sell.add(BookRecord(orderId, timestamp, order).log(ADD, timestamp, "SELL"))
 
-    fun pullBuy(timestamp: Instant): BookRecord = lock.withLock { buy.remove().log(DELETE, timestamp, "BUY") }
-    fun pullSell(timestamp: Instant): BookRecord = lock.withLock { sell.remove().log(DELETE, timestamp, "SELL") }
+    fun pullBuy(timestamp: Instant): BookRecord =  buy.remove().log(DELETE, timestamp, "BUY")
+    fun pullSell(timestamp: Instant): BookRecord =  sell.remove().log(DELETE, timestamp, "SELL")
 
-    fun calcQtyBuy(): Int = lock.withLock { calcQty(buy) }
+    fun calcQtyBuy(): Int = calcQty(buy)
 
-    fun calcQtySell(): Int = lock.withLock { calcQty(sell) }
-
-    @OptIn(ExperimentalContracts::class)
-    inline fun withLock(func: Book.() -> Unit) {
-        contract { callsInPlace(func, InvocationKind.EXACTLY_ONCE) }
-        lock.withLock { func() }
-    }
+    fun calcQtySell(): Int = calcQty(sell)
 
     private fun BookRecord.log(action: Action, timestamp: Instant, side: String): BookRecord = this.also {
         log?.log(
@@ -516,7 +523,7 @@ private enum class Action {
     DELETE,
 }
 
-private interface BookLog {
+private interface BookLog: AutoCloseable {
     fun log(
         action: Action,
         transactTime: Instant,
@@ -549,6 +556,10 @@ private class CsvBookLog(path: Path) : BookLog {
     ) {
         writer.writeNext(arrayOf(action.name, transactTime.toString(), clOrdID, ordID, instrument, side, price, qty))
         writer.flush()
+    }
+
+    override fun close() {
+        writer.close()
     }
 
     companion object {
