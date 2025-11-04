@@ -203,11 +203,40 @@ class KotlinFIXRuleTest {
     }
 
     @Test
+    fun `touch reset internal state test`() {
+        testRule {
+            val buy1 = buildMessage(SIDE_BUY, "test-security")
+            val buy2 = buildMessage(SIDE_BUY, "test-security")
+            val sell1 = buildMessage(SIDE_SELL, "test-security")
+
+            rule.assertHandle(buy1)
+            rule.assertHandle(buy2)
+            rule.touch(this, mapOf("action" to "reset"))
+            rule.assertHandle(sell1)
+
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy1, msg, ALIAS_1, orderId = 1, execId = 1) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectNewBuyIsPlaced(buy1, msg, DC_ALIAS_1, orderId = 1, execId = 2) // execId looks as bag
+            }
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, ALIAS_1, orderId = 2, execId = 3) }
+
+            assertSent(BUILDER_CLASS) { msg -> expectNewBuyIsPlaced(buy2, msg, DC_ALIAS_1, orderId = 2, execId = 4) }
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell1, null, null, msg, ALIAS_2, orderId = 1, execId = 1)
+            }
+
+            assertSent(BUILDER_CLASS) { msg ->
+                expectOrderExpired(sell1, null, null, msg, DC_ALIAS_2, orderId = 1, execId = 1)
+            }
+            assertNothingSent()
+        }
+    }
+
+    @Test
     fun `two buy one sell for test-security with book log test`(@TempDir tempDir: Path) {
         val pattern = "test-file"
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
-
 
         testRule {
             rule.touch(this, mapOf("action" to "reset"))
