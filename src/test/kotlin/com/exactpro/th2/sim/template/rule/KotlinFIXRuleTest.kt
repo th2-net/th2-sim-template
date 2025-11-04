@@ -78,6 +78,7 @@ import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_SELL
 import com.exactpro.th2.sim.template.FixValues.Companion.TIME_IN_FORCE_DAY
 import com.exactpro.th2.sim.template.rule.test.api.TestRuleContext.Companion.testRule
 import com.opencsv.CSVReader
+import org.apache.commons.lang3.RandomStringUtils.insecure
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -91,16 +92,20 @@ import org.junit.jupiter.params.provider.ValueSource
 import strikt.api.Assertion
 import strikt.api.expectThat
 import strikt.assertions.isA
+import strikt.assertions.isBlank
 import strikt.assertions.isEqualTo
 import strikt.assertions.isGreaterThan
+import strikt.assertions.isLessThan
 import strikt.assertions.isNotNull
 import java.io.FileReader
 import java.nio.file.Path
 import java.time.Instant
+import kotlin.io.path.absolutePathString
 import kotlin.io.path.exists
 import kotlin.io.path.extension
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.name
+import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import kotlin.random.Random
 
@@ -113,40 +118,30 @@ class KotlinFIXRuleTest {
         testRule { rule.touch(this, mapOf("action" to "rEsEt")) }
     }
 
-    @Test
+    @Test // FIXME: several rules can affect each other
     fun `csv book writer remove old files after create new rule test`(@TempDir tempDir: Path) {
         val pattern = "test-file"
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
 
-        val fileD = tempDir.resolve("$pattern-d.csv").also { it.writeText("file d") }
-        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
-        val file2 = tempDir.resolve("$pattern-2.csv").also { it.writeText("file 2") }
-        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
-        val fileA = tempDir.resolve("$pattern-a.csv").also { it.writeText("file a") }
+        val files = (0..3).associate {
+            tempDir.resolve("$pattern-${insecure().nextAlphanumeric(10)}.csv") to insecure().nextAlphanumeric(10)
+        }
+
+        files.forEach { path, content ->
+            path.writeText(content)
+            Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+        }
 
         assertAll(
-            { assertTrue(fileD.exists(), "file-D") },
-            { assertTrue(file2.exists(), "file-2") },
-            { assertTrue(fileA.exists(), "file-A") },
-        )
-
-        createRule()
-//        testRule { rule.touch(this, mapOf("action" to "reset")) }
-
-        assertAll(
-            { assertFalse(fileD.exists(), "file-D") },
-            { assertFalse(file2.exists(), "file-2") },
-            { assertTrue(fileA.exists(), "file-A") },
-            {
-                val files = tempDir.listDirectoryEntries().toList()
-                assertAll(
-                    { assertEquals(2, files.size, "check size of $files") },
-                    { assertTrue(files.all { it.name.startsWith(pattern) }, "check pattern in $files") },
-                    { assertTrue(files.all { it.extension == "csv" }, "check extension in $files") },
-                )
+            files.keys.map { path ->
+                { assertTrue(path.exists(), path.absolutePathString()) }
             }
         )
+
+        val checkpoint = Instant.now()
+        createRule()
+        expectCsvFiles(tempDir, files.toList(), pattern, checkpoint)
     }
 
     @Test
@@ -155,33 +150,24 @@ class KotlinFIXRuleTest {
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
 
-        val fileD = tempDir.resolve("$pattern-d.csv").also { it.writeText("file d") }
-        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
-        val file2 = tempDir.resolve("$pattern-2.csv").also { it.writeText("file 2") }
-        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
-        val fileA = tempDir.resolve("$pattern-a.csv").also { it.writeText("file a") }
+        val files = (0..3).associate {
+            tempDir.resolve("$pattern-${insecure().nextAlphanumeric(10)}.csv") to insecure().nextAlphanumeric(10)
+        }
+
+        files.forEach { path, content ->
+            path.writeText(content)
+            Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+        }
 
         assertAll(
-            { assertTrue(fileD.exists(), "file-D") },
-            { assertTrue(file2.exists(), "file-2") },
-            { assertTrue(fileA.exists(), "file-A") },
-        )
-
-        testRule { rule.touch(this, mapOf("action" to "reset")) }
-
-        assertAll(
-            { assertFalse(fileD.exists(), "file-D") },
-            { assertFalse(file2.exists(), "file-2") },
-            { assertTrue(fileA.exists(), "file-A") },
-            {
-                val files = tempDir.listDirectoryEntries().toList()
-                assertAll(
-                    { assertEquals(2, files.size, "check size of $files") },
-                    { assertTrue(files.all { it.name.startsWith(pattern) }, "check pattern in $files") },
-                    { assertTrue(files.all { it.extension == "csv" }, "check extension in $files") },
-                )
+            files.keys.map { path ->
+                { assertTrue(path.exists(), path.absolutePathString()) }
             }
         )
+
+        val checkpoint = Instant.now()
+        testRule { rule.touch(this, mapOf("action" to "reset")) }
+        expectCsvFiles(tempDir, files.toList(), pattern, checkpoint)
     }
 
     @Test
@@ -190,18 +176,22 @@ class KotlinFIXRuleTest {
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.dir", tempDir.toString())
         System.setProperty("th2.sim.kotlin-fix-rule.book-log.pattern", pattern)
 
-        val fileD = tempDir.resolve("$pattern-d.csv").also { it.writeText("file d") }
-        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
-        val file2 = tempDir.resolve("$pattern-2.csv").also { it.writeText("file 2") }
-        Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
-        val fileA = tempDir.resolve("$pattern-a.csv").also { it.writeText("file a") }
+        val files = (0..3).associate {
+            tempDir.resolve("$pattern-${insecure().nextAlphanumeric(10)}.csv") to insecure().nextAlphanumeric(10)
+        }
+
+        files.forEach { path, content ->
+            path.writeText(content)
+            Thread.sleep(1) // Files.getLastModifiedTime returns time with microseconds precession
+        }
 
         assertAll(
-            { assertTrue(fileD.exists(), "file-D") },
-            { assertTrue(file2.exists(), "file-2") },
-            { assertTrue(fileA.exists(), "file-A") },
+            files.keys.map { path ->
+                { assertTrue(path.exists(), path.absolutePathString()) }
+            }
         )
 
+        val checkpoint = Instant.now()
         testRule {
             val nos = buildMessage {
                 addField(TEXT, "ReSeT")
@@ -209,20 +199,7 @@ class KotlinFIXRuleTest {
             rule.assertHandle(nos)
             assertNothingSent()
         }
-
-        assertAll(
-            { assertFalse(fileD.exists(), "file-D") },
-            { assertFalse(file2.exists(), "file-2") },
-            { assertTrue(fileA.exists(), "file-A") },
-            {
-                val files = tempDir.listDirectoryEntries().toList()
-                assertAll(
-                    { assertEquals(2, files.size, "check size of $files") },
-                    { assertTrue(files.all { it.name.startsWith(pattern) }, "check pattern in $files") },
-                    { assertTrue(files.all { it.extension == "csv" }, "check extension in $files") },
-                )
-            }
-        )
+        expectCsvFiles(tempDir, files.toList(), pattern, checkpoint)
     }
 
     @Test
@@ -315,7 +292,7 @@ class KotlinFIXRuleTest {
             assertEquals(1, files.size, "check size")
             val lines = CSVReader(FileReader(files.single().toFile())).use(CSVReader::readAll)
             expectThat(lines) {
-                get { size } isEqualTo 7
+                get { size } isEqualTo 8
                 get { get(0) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "Action"
@@ -329,6 +306,19 @@ class KotlinFIXRuleTest {
                 }
                 get { get(1) } and {
                     get { size } isEqualTo 8
+                    get { get(0) } isEqualTo "FULL_RESET"
+                    get { get(1) }.isNotNull() and {
+                        get { Instant.parse(this) }.isLessThan(timestamp1)
+                    }
+                    get { get(2) }.isBlank()
+                    get { get(3) }.isBlank()
+                    get { get(4) }.isBlank()
+                    get { get(5) }.isBlank()
+                    get { get(6) }.isBlank()
+                    get { get(7) }.isBlank()
+                }
+                get { get(2) } and {
+                    get { size } isEqualTo 8
                     get { get(0) } isEqualTo "ADD"
                     get { get(1) } isEqualTo buyEr1?.body[TRANSACT_TIME]?.toString() and {
                         get { Instant.parse(this) }.isGreaterThan(timestamp1)
@@ -340,7 +330,7 @@ class KotlinFIXRuleTest {
                     get { get(6) } isEqualTo buy1.body[PRICE]?.toString()
                     get { get(7) } isEqualTo buy1.body[ORDER_QTY]?.toString()
                 }
-                get { get(2) } and {
+                get { get(3) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "ADD"
                     get { get(1) } isEqualTo buyEr2?.body[TRANSACT_TIME]?.toString() and {
@@ -353,7 +343,7 @@ class KotlinFIXRuleTest {
                     get { get(6) } isEqualTo buy2.body[PRICE]?.toString()
                     get { get(7) } isEqualTo buy2.body[ORDER_QTY]?.toString()
                 }
-                get { get(3) } and {
+                get { get(4) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "ADD"
                     get { get(1) } isEqualTo sellEr1?.body[TRANSACT_TIME]?.toString() and {
@@ -366,7 +356,7 @@ class KotlinFIXRuleTest {
                     get { get(6) } isEqualTo sell1.body[PRICE]?.toString()
                     get { get(7) } isEqualTo sell1.body[ORDER_QTY]?.toString()
                 }
-                get { get(4) } and {
+                get { get(5) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "DELETE"
                     get { get(1) } isEqualTo sellTrd1?.body[TRANSACT_TIME]?.toString() and {
@@ -379,7 +369,7 @@ class KotlinFIXRuleTest {
                     get { get(6) } isEqualTo sell1.body[PRICE]?.toString()
                     get { get(7) } isEqualTo sell1.body[ORDER_QTY]?.toString()
                 }
-                get { get(5) } and {
+                get { get(6) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "DELETE"
                     get { get(1) } isEqualTo buyTrd1?.body[TRANSACT_TIME]?.toString() and {
@@ -392,7 +382,7 @@ class KotlinFIXRuleTest {
                     get { get(6) } isEqualTo buy1.body[PRICE]?.toString()
                     get { get(7) } isEqualTo buy1.body[ORDER_QTY]?.toString()
                 }
-                get { get(6) } and {
+                get { get(7) } and {
                     get { size } isEqualTo 8
                     get { get(0) } isEqualTo "DELETE"
                     get { get(1) } isEqualTo buyTrd2?.body[TRANSACT_TIME]?.toString() and {
@@ -1094,6 +1084,71 @@ class KotlinFIXRuleTest {
                     extractTradingParty("DEMO-CONN2", "DEMOFIRM1")
                 }
             }
+        }
+
+        @Suppress("SameParameterValue")
+        private fun expectCsvFiles(
+            dir: Path,
+            filesToContent: List<Pair<Path, String>>,
+            pattern: String,
+            checkpoint: Instant,
+        ) {
+            assertAll(
+                {
+                    assertAll(
+                        filesToContent.map(Pair<Path, String>::first).dropLast(1).map { path ->
+                            { assertFalse(path.exists(), path.absolutePathString()) }
+                        }
+                    )
+                },
+                {
+                    val (file, content) = filesToContent.last()
+                    val files = dir.listDirectoryEntries().toList()
+                    assertAll(
+                        { assertEquals(2, files.size, "check size of $files") },
+                        { assertEquals(content, files.single { it == file }.readText(), "check content of $file") },
+                        {
+                            val newFile = files.single { it != file }
+                            assertAll(
+                                { assertTrue(newFile.name.startsWith(pattern), "check pattern in $newFile") },
+                                { assertEquals("csv", newFile.extension, "check extension in $newFile") },
+                                {
+                                    val lines = CSVReader(FileReader(newFile.toFile())).use(CSVReader::readAll)
+                                    expectThat(lines) {
+                                        get { size } isEqualTo 2
+                                        get { get(0) } and {
+                                            get { size } isEqualTo 8
+                                            get { get(0) } isEqualTo "Action"
+                                            get { get(1) } isEqualTo "TransactTime"
+                                            get { get(2) } isEqualTo "ClOrdID"
+                                            get { get(3) } isEqualTo "OrdID"
+                                            get { get(4) } isEqualTo "Instrument"
+                                            get { get(5) } isEqualTo "Side"
+                                            get { get(6) } isEqualTo "Price"
+                                            get { get(7) } isEqualTo "Qty"
+                                        }
+                                        get { get(1) } and {
+                                            get { size } isEqualTo 8
+                                            get { get(0) } isEqualTo "FULL_RESET"
+                                            get { get(1) }.isNotNull() and {
+                                                get { Instant.parse(this) }.isGreaterThan(checkpoint)
+                                            }
+                                            get { get(2) }.isBlank()
+                                            get { get(3) }.isBlank()
+                                            get { get(4) }.isBlank()
+                                            get { get(5) }.isBlank()
+                                            get { get(6) }.isBlank()
+                                            get { get(7) }.isBlank()
+                                        }
+                                    }
+                                }
+                            )
+                        },
+                        { assertTrue(files.all { it.name.startsWith(pattern) }, "check pattern in $files") },
+                        { assertTrue(files.all { it.extension == "csv" }, "check extension in $files") },
+                    )
+                }
+            )
         }
     }
 }

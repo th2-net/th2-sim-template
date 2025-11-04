@@ -68,6 +68,7 @@ import com.exactpro.th2.sim.template.FixValues.Companion.SESSION_REJECT_REASON_R
 import com.exactpro.th2.sim.template.FixValues.Companion.SIDE_BUY
 import com.exactpro.th2.sim.template.rule.Action.ADD
 import com.exactpro.th2.sim.template.rule.Action.DELETE
+import com.exactpro.th2.sim.template.rule.Action.FULL_RESET
 import com.opencsv.CSVWriter
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.FileWriter
@@ -407,7 +408,7 @@ class KotlinFIXRule(fields: Map<String, Any?>, sessionAliases: Map<String, Strin
 
         books.clear()
 
-        //FIXME: several rules can affect each other
+        // FIXME: several rules can affect each other
         bookLog = CsvBookLog.createCsvBookLog(
             System.getProperty(ENV_BOOK_LOG_DIR)?.run(Path::of),
             System.getProperty(ENV_BOOK_LOG_FILE_PATTERN)
@@ -521,6 +522,7 @@ private class Book(
 private enum class Action {
     ADD,
     DELETE,
+    FULL_RESET,
 }
 
 private interface BookLog: AutoCloseable {
@@ -541,7 +543,7 @@ private class CsvBookLog(path: Path) : BookLog {
 
     init {
         writer.writeNext(arrayOf("Action", "TransactTime", "ClOrdID", "OrdID", "Instrument", "Side", "Price", "Qty"))
-        writer.flush()
+        log(FULL_RESET, Instant.now(), null, null, null, null, null, null)
     }
 
     override fun log(
