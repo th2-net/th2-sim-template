@@ -3,7 +3,7 @@ FROM gradle:8.11.1-jdk21 AS build
 COPY ./ .
 RUN ./gradlew clean build dockerPrepare
 
-FROM adoptopenjdk/openjdk11:alpine
+FROM amazoncorretto:11-alpine-jdk
 ENV RABBITMQ_HOST=rabbitmq \
     RABBITMQ_PORT=5672 \
     RABBITMQ_USER=guest \

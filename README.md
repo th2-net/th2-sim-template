@@ -50,6 +50,11 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 
 ## Release notes
 
+### 4.2.3
+
++ Produce multi-platform docker image
+  + migrated to [amazoncorretto:11-alpine-jdk](https://hub.docker.com/layers/library/amazoncorretto/11-alpine-jdk) docker image as base
+
 ### 4.2.2
 
 + [[GH-57] KotlinFIXRule: implemented reset state function](https://github.com/th2-net/th2-sim-template/issues/57)
