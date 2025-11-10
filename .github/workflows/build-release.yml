@@ -4,7 +4,7 @@ on: workflow_dispatch
 
 jobs:
   build:
-    uses: th2-net/.github/.github/workflows/compound-java.yml@docker-multi-platform # FIXME: replace to mani after check
+    uses: th2-net/.github/.github/workflows/compound-java.yml@main
     with:
       build-target: 'Docker'
       docker-multi-platform: true
