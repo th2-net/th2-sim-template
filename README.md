@@ -7,22 +7,22 @@ This project implemented gRPC API, which is described in [th2-grpc-sim-template]
 Fork this project and follow instructions to start your custom project
 ## How to use
 1. Fork [th2-grpc-sim-template](https://github.com/th2-net/th2-grpc-sim-template) project and edit proto files if needed.
-1. Edit dependencies in ``build.gradle`` file to include all the required libraries with generated gRPC sources. 
-1. Edit ``rootProject.name`` variable in ``settings.gradle`` file.
-1. Edit services classes and their methods
-1. Edit [services file](https://github.com/th2-net/th2-sim-template/blob/master/src/main/resources/META-INF/services/com.exactpro.th2.sim.ISimulatorPart "com.exactpro.th2.sim.ISimulatorPart") in ``META-INF`` if needed 
+2. Edit dependencies in ``build.gradle`` file to include all the required libraries with generated gRPC sources. 
+3. Edit ``rootProject.name`` variable in ``settings.gradle`` file.
+4. Edit services classes and their methods
+5. Edit [services file](https://github.com/th2-net/th2-sim-template/blob/master/src/main/resources/META-INF/services/com.exactpro.th2.sim.ISimulatorPart "com.exactpro.th2.sim.ISimulatorPart") in ``META-INF`` if needed 
 ## Rules
 
 Rules consists of two methods:
 1. ``checkTriggered`` - it is used for checking if rule will generate the messages
-1. ``handle`` or ``handleTriggered`` - it is used for generating outgoing messages
+2. ``handle`` or ``handleTriggered`` - it is used for generating outgoing messages
 
 Rules can also use arguments. In order to do this you should use constructor in your custom class.
 
 The rules are divided into 3 types and the only difference between them is the login method for ``checkTriggered``:
 1. Compare rule ([Example](https://github.com/th2-net/th2-sim-template/blob/master/src/main/kotlin/com/exactpro/th2/sim/template/rule/TemplateAbstractRule.kt "TemplateAbstractRule.kt"))
-1. Predicate rule ([Example](https://github.com/th2-net/th2-sim-template/blob/master/src/main/kotlin/com/exactpro/th2/sim/template/rule/TemplatePredicateRule.kt "TemplatePredicateRule.kt"))
-1. Abstract rule ([Example](https://github.com/th2-net/th2-sim-template/blob/master/src/main/kotlin/com/exactpro/th2/sim/template/rule/TemplateFixRule.kt "TemplateFixRule.kt"))
+2. Predicate rule ([Example](https://github.com/th2-net/th2-sim-template/blob/master/src/main/kotlin/com/exactpro/th2/sim/template/rule/TemplatePredicateRule.kt "TemplatePredicateRule.kt"))
+3. Abstract rule ([Example](https://github.com/th2-net/th2-sim-template/blob/master/src/main/kotlin/com/exactpro/th2/sim/template/rule/TemplateFixRule.kt "TemplateFixRule.kt"))
 
 ### Compare rule
 This type contains the most simple logic for check. 
@@ -49,6 +49,11 @@ If the income message is correct (``NewOrderSingle``), the rule will generate on
 ![picture](scheme.png)
 
 ## Release notes
+
+### 4.2.3
+
++ Produce multi-platform docker image
+  + migrated to [amazoncorretto:11-alpine-jdk](https://hub.docker.com/layers/library/amazoncorretto/11-alpine-jdk) docker image as base
 
 ### 4.2.2
 
