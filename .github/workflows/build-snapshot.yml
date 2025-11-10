@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-job:
-    uses: th2-net/.github/.github/workflows/compound-java-dev.yml@main
+    uses: th2-net/.github/.github/workflows/compound-java-dev.yml@docker-multi-platform # FIXME: replace to mani after check
     with:
       build-target: 'Docker'
       docker-multi-platform: true
